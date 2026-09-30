@@ -1,0 +1,17 @@
+{
+  "name": "niryana-jewels-backend",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Niryana Jewels — standalone API backend (Razorpay orders/verification). Deployed separately on Render; the Next.js frontend (deployed on Vercel) calls this over HTTPS.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "razorpay": "^2.9.8"
+  }
+}

@@ -1,0 +1,20 @@
+# Render "Blueprint" — lets you deploy the backend with one click via
+# https://dashboard.render.com/blueprints instead of clicking through the
+# New Web Service wizard manually. Root Directory is set to /backend so Render
+# only builds/runs that folder, even though it lives inside the same repo as
+# the Next.js frontend.
+services:
+  - type: web
+    name: niryana-jewels-backend
+    runtime: node
+    rootDir: backend
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: RAZORPAY_KEY_ID
+        sync: false
+      - key: RAZORPAY_KEY_SECRET
+        sync: false
+      - key: FRONTEND_URLS
+        sync: false
