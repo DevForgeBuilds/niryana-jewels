@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
+import { motion, AnimatePresence } from "framer-motion";
 import { LOGO_URL, LOGO_URL_LIGHT } from "@/data/mediaManifest";
 import { useCartStore } from "@/store/cartStore";
 import { useWishlistStore } from "@/store/wishlistStore";
@@ -87,11 +88,20 @@ export default function Navbar() {
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
               <path d="M12 20.5s-7.5-4.6-10-9.2C0.3 8 1.8 4.5 5 3.4c2.1-.7 4.3.1 5.5 1.9l1.5 2.1 1.5-2.1c1.2-1.8 3.4-2.6 5.5-1.9 3.2 1.1 4.7 4.6 3 7.9-2.5 4.6-10 9.2-10 9.2z" />
             </svg>
-            {wishlistCount > 0 && (
-              <span className="absolute -top-2 -right-2 bg-gold text-forest text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
-                {wishlistCount}
-              </span>
-            )}
+            <AnimatePresence>
+              {wishlistCount > 0 && (
+                <motion.span
+                  key={wishlistCount}
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  exit={{ scale: 0 }}
+                  transition={{ type: "spring", stiffness: 500, damping: 15 }}
+                  className="absolute -top-2 -right-2 bg-gold text-forest text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center"
+                >
+                  {wishlistCount}
+                </motion.span>
+              )}
+            </AnimatePresence>
           </Link>
           <Link
             href="/cart"
@@ -103,11 +113,20 @@ export default function Navbar() {
               <circle cx="9" cy="20" r="1.4" />
               <circle cx="18" cy="20" r="1.4" />
             </svg>
-            {count > 0 && (
-              <span className="absolute -top-2 -right-2 bg-gold text-forest text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
-                {count}
-              </span>
-            )}
+            <AnimatePresence>
+              {count > 0 && (
+                <motion.span
+                  key={count}
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  exit={{ scale: 0 }}
+                  transition={{ type: "spring", stiffness: 500, damping: 15 }}
+                  className="absolute -top-2 -right-2 bg-gold text-forest text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center"
+                >
+                  {count}
+                </motion.span>
+              )}
+            </AnimatePresence>
           </Link>
           <button
             className={light ? "md:hidden text-cream" : "md:hidden text-forest"}

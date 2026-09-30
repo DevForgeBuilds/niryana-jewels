@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import { useParams } from "next/navigation";
+import { motion, AnimatePresence } from "framer-motion";
 import { getProductBySlug, PRODUCTS } from "@/data/products";
 import { useCartStore } from "@/store/cartStore";
 import { useWishlistStore } from "@/store/wishlistStore";
@@ -17,12 +18,19 @@ export default function ProductDetailPage() {
   const [activeImg, setActiveImg] = useState(0);
   const [size, setSize] = useState(RING_SIZES[2]);
   const [qty, setQty] = useState(1);
+  const [added, setAdded] = useState(false);
   const addItem = useCartStore((s) => s.addItem);
   const isFavorite = useWishlistStore((s) => (product ? s.isFavorite(product.id) : false));
   const toggleWishlist = useWishlistStore((s) => s.toggleItem);
 
   if (!product) {
     return <div className="pt-40 text-center text-forest">Product not found.</div>;
+  }
+
+  function handleAddToCart() {
+    addItem(product, qty, product.category === "rings" ? size : null);
+    setAdded(true);
+    setTimeout(() => setAdded(false), 1400);
   }
 
   const related = PRODUCTS.filter(
@@ -119,29 +127,61 @@ export default function ProductDetailPage() {
               <span className="px-4">{qty}</span>
               <button onClick={() => setQty((q) => q + 1)} className="px-4 py-2 text-forest">+</button>
             </div>
-            <button
-              onClick={() => addItem(product, qty, product.category === "rings" ? size : null)}
-              className="flex-1 bg-forest text-cream py-3 rounded-full text-sm uppercase tracking-widest hover:bg-gold hover:text-forest transition-colors duration-300"
+            <motion.button
+              onClick={handleAddToCart}
+              whileTap={{ scale: 0.96 }}
+              animate={added ? { scale: [1, 1.04, 1] } : { scale: 1 }}
+              transition={{ duration: 0.35 }}
+              className={`relative overflow-hidden flex-1 py-3 rounded-full text-sm uppercase tracking-widest transition-colors duration-300 ${
+                added ? "bg-gold text-forest" : "bg-forest text-cream hover:bg-gold hover:text-forest"
+              }`}
             >
-              Add to Cart
-            </button>
-            <button
+              <AnimatePresence mode="wait" initial={false}>
+                {added ? (
+                  <motion.span
+                    key="added"
+                    initial={{ y: 10, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    exit={{ y: -10, opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="inline-block"
+                  >
+                    ✓ Added to Cart
+                  </motion.span>
+                ) : (
+                  <motion.span
+                    key="add"
+                    initial={{ y: 10, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    exit={{ y: -10, opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="inline-block"
+                  >
+                    Add to Cart
+                  </motion.span>
+                )}
+              </AnimatePresence>
+            </motion.button>
+            <motion.button
               onClick={() => toggleWishlist(product)}
+              whileTap={{ scale: 0.85 }}
               aria-label={isFavorite ? "Remove from wishlist" : "Add to wishlist"}
               aria-pressed={isFavorite}
               className="w-12 h-12 flex-shrink-0 rounded-full border border-forest/20 flex items-center justify-center hover:border-gold transition-colors duration-300"
             >
-              <svg
+              <motion.svg
                 width="20"
                 height="20"
                 viewBox="0 0 24 24"
                 fill={isFavorite ? "#C9A86A" : "none"}
                 stroke={isFavorite ? "#C9A86A" : "#1B3A2F"}
                 strokeWidth="1.8"
+                animate={isFavorite ? { scale: [1, 1.4, 0.9, 1.15, 1] } : { scale: 1 }}
+                transition={{ duration: 0.5, ease: "easeInOut" }}
               >
                 <path d="M12 20.5s-7.5-4.6-10-9.2C0.3 8 1.8 4.5 5 3.4c2.1-.7 4.3.1 5.5 1.9l1.5 2.1 1.5-2.1c1.2-1.8 3.4-2.6 5.5-1.9 3.2 1.1 4.7 4.6 3 7.9-2.5 4.6-10 9.2-10 9.2z" />
-              </svg>
-            </button>
+              </motion.svg>
+            </motion.button>
           </div>
           <p className="text-xs text-charcoal/50 mb-6">
             {isFavorite ? "Saved to your wishlist" : "Tap the heart to save this piece for later"}
