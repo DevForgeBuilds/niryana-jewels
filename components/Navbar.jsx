@@ -6,6 +6,7 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { LOGO_URL, LOGO_URL_LIGHT } from "@/data/mediaManifest";
 import { useCartStore } from "@/store/cartStore";
+import { useWishlistStore } from "@/store/wishlistStore";
 
 const LINKS = [
   { href: "/shop", label: "Shop" },
@@ -19,6 +20,7 @@ export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
   const count = useCartStore((s) => s.items.reduce((n, i) => n + i.quantity, 0));
+  const wishlistCount = useWishlistStore((s) => s.items.length);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 40);
@@ -78,8 +80,23 @@ export default function Navbar() {
             Account
           </Link>
           <Link
+            href="/wishlist"
+            className={`relative hidden sm:inline-flex hover:text-gold transition-colors ${light ? "text-cream" : "text-forest"}`}
+            aria-label="Wishlist"
+          >
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
+              <path d="M12 20.5s-7.5-4.6-10-9.2C0.3 8 1.8 4.5 5 3.4c2.1-.7 4.3.1 5.5 1.9l1.5 2.1 1.5-2.1c1.2-1.8 3.4-2.6 5.5-1.9 3.2 1.1 4.7 4.6 3 7.9-2.5 4.6-10 9.2-10 9.2z" />
+            </svg>
+            {wishlistCount > 0 && (
+              <span className="absolute -top-2 -right-2 bg-gold text-forest text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
+                {wishlistCount}
+              </span>
+            )}
+          </Link>
+          <Link
             href="/cart"
             className={`relative hover:text-gold transition-colors ${light ? "text-cream" : "text-forest"}`}
+            aria-label="Cart"
           >
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
               <path d="M6 6h15l-1.5 9h-12L5 3H2" strokeLinecap="round" strokeLinejoin="round" />
@@ -111,6 +128,9 @@ export default function Navbar() {
               {l.label}
             </Link>
           ))}
+          <Link href="/wishlist" className="text-sm tracking-widest uppercase text-forest" onClick={() => setOpen(false)}>
+            Wishlist{wishlistCount > 0 ? ` (${wishlistCount})` : ""}
+          </Link>
           <Link href="/account" className="text-sm tracking-widest uppercase text-forest" onClick={() => setOpen(false)}>
             Account
           </Link>

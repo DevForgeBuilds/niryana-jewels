@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useParams } from "next/navigation";
 import { getProductBySlug, PRODUCTS } from "@/data/products";
 import { useCartStore } from "@/store/cartStore";
+import { useWishlistStore } from "@/store/wishlistStore";
 import ProductCard from "@/components/ProductCard";
 import Reveal from "@/components/Reveal";
 
@@ -17,6 +18,8 @@ export default function ProductDetailPage() {
   const [size, setSize] = useState(RING_SIZES[2]);
   const [qty, setQty] = useState(1);
   const addItem = useCartStore((s) => s.addItem);
+  const isFavorite = useWishlistStore((s) => (product ? s.isFavorite(product.id) : false));
+  const toggleWishlist = useWishlistStore((s) => s.toggleItem);
 
   if (!product) {
     return <div className="pt-40 text-center text-forest">Product not found.</div>;
@@ -110,7 +113,7 @@ export default function ProductDetailPage() {
             </div>
           )}
 
-          <div className="flex items-center gap-4 mb-8">
+          <div className="flex items-center gap-4 mb-2">
             <div className="flex items-center border border-forest/20 rounded-full">
               <button onClick={() => setQty((q) => Math.max(1, q - 1))} className="px-4 py-2 text-forest">−</button>
               <span className="px-4">{qty}</span>
@@ -122,7 +125,27 @@ export default function ProductDetailPage() {
             >
               Add to Cart
             </button>
+            <button
+              onClick={() => toggleWishlist(product)}
+              aria-label={isFavorite ? "Remove from wishlist" : "Add to wishlist"}
+              aria-pressed={isFavorite}
+              className="w-12 h-12 flex-shrink-0 rounded-full border border-forest/20 flex items-center justify-center hover:border-gold transition-colors duration-300"
+            >
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill={isFavorite ? "#C9A86A" : "none"}
+                stroke={isFavorite ? "#C9A86A" : "#1B3A2F"}
+                strokeWidth="1.8"
+              >
+                <path d="M12 20.5s-7.5-4.6-10-9.2C0.3 8 1.8 4.5 5 3.4c2.1-.7 4.3.1 5.5 1.9l1.5 2.1 1.5-2.1c1.2-1.8 3.4-2.6 5.5-1.9 3.2 1.1 4.7 4.6 3 7.9-2.5 4.6-10 9.2-10 9.2z" />
+              </svg>
+            </button>
           </div>
+          <p className="text-xs text-charcoal/50 mb-6">
+            {isFavorite ? "Saved to your wishlist" : "Tap the heart to save this piece for later"}
+          </p>
         </Reveal>
       </div>
 
