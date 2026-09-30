@@ -28,18 +28,24 @@ export default function Navbar() {
 
   if (pathname?.startsWith("/admin")) return null;
 
+  // The transparent, light-text navbar treatment only makes sense floating over
+  // the homepage's dark hero image/video. Every other page starts with a plain
+  // light (cream) background right at the top, so the navbar must always use
+  // the dark/solid treatment there — otherwise light text disappears against
+  // the light page background.
+  const isHomepage = pathname === "/";
+  const light = isHomepage && !scrolled;
+
   return (
     <header
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ease-apple ${
-        scrolled
-          ? "bg-cream/90 backdrop-blur-md shadow-sm py-2"
-          : "bg-transparent py-4"
+        light ? "bg-transparent py-4" : "bg-cream/90 backdrop-blur-md shadow-sm py-2"
       }`}
     >
       <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2">
           <Image
-            src={scrolled ? LOGO_URL : LOGO_URL_LIGHT}
+            src={light ? LOGO_URL_LIGHT : LOGO_URL}
             alt="Niryana Jewels"
             width={140}
             height={70}
@@ -54,7 +60,7 @@ export default function Navbar() {
               key={l.href}
               href={l.href}
               className={`text-sm tracking-widest uppercase hover:text-gold transition-colors duration-300 ${
-                scrolled ? "text-forest" : "text-cream"
+                light ? "text-cream" : "text-forest"
               }`}
             >
               {l.label}
@@ -66,14 +72,14 @@ export default function Navbar() {
           <Link
             href="/account"
             className={`hidden sm:inline text-sm tracking-wide hover:text-gold transition-colors ${
-              scrolled ? "text-forest" : "text-cream"
+              light ? "text-cream" : "text-forest"
             }`}
           >
             Account
           </Link>
           <Link
             href="/cart"
-            className={`relative hover:text-gold transition-colors ${scrolled ? "text-forest" : "text-cream"}`}
+            className={`relative hover:text-gold transition-colors ${light ? "text-cream" : "text-forest"}`}
           >
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
               <path d="M6 6h15l-1.5 9h-12L5 3H2" strokeLinecap="round" strokeLinejoin="round" />
@@ -87,7 +93,7 @@ export default function Navbar() {
             )}
           </Link>
           <button
-            className={scrolled ? "md:hidden text-forest" : "md:hidden text-cream"}
+            className={light ? "md:hidden text-cream" : "md:hidden text-forest"}
             onClick={() => setOpen((o) => !o)}
             aria-label="Menu"
           >
