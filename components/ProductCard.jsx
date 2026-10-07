@@ -1,21 +1,43 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { useCartStore } from "@/store/cartStore";
 import { useWishlistStore } from "@/store/wishlistStore";
+import { useAdminStore } from "@/store/adminStore";
+import { useCartDrawerStore } from "@/store/cartDrawerStore";
+import { toast } from "@/store/toastStore";
+import { StarRatingDisplay } from "./StarRating";
+
+const LOW_STOCK_THRESHOLD = 8;
 
 export default function ProductCard({ product }) {
   const addItem = useCartStore((s) => s.addItem);
   const isFavorite = useWishlistStore((s) => s.isFavorite(product.id));
   const toggleWishlist = useWishlistStore((s) => s.toggleItem);
+  const restoreWishlistItem = useWishlistStore((s) => s.restoreItem);
+  const openCartDrawer = useCartDrawerStore((s) => s.open);
+  const allReviews = useAdminStore((s) => s.reviews);
   const [added, setAdded] = useState(false);
+
+  const { average, count } = useMemo(() => {
+    const approved = allReviews.filter((r) => r.productName === product.name && r.status === "approved");
+    if (approved.length === 0) return { average: 0, count: 0 };
+    return {
+      average: approved.reduce((sum, r) => sum + r.rating, 0) / approved.length,
+      count: approved.length,
+    };
+  }, [allReviews, product.name]);
 
   function handleAdd() {
     addItem(product, 1);
     setAdded(true);
+    openCartDrawer();
+    toast(`Added "${product.name}" to cart`, "success", {
+      action: { label: "View Cart", onClick: openCartDrawer },
+    });
     setTimeout(() => setAdded(false), 1200);
   }
 
@@ -40,10 +62,37 @@ export default function ProductCard({ product }) {
         )}
       </Link>
 
+      {typeof product.stock_quantity === "number" && product.stock_quantity > 0 && product.stock_quantity <= LOW_STOCK_THRESHOLD && (
+        <span className="absolute top-3 left-3 bg-red-600 text-white text-[10px] font-medium uppercase tracking-wide px-2.5 py-1 rounded-full z-10">
+          Only {product.stock_quantity} left
+        </span>
+      )}
+
       <motion.button
         onClick={(e) => {
           e.preventDefault();
+          const wasFavorite = isFavorite;
           toggleWishlist(product);
+          toast(
+            wasFavorite ? `Removed "${product.name}" from wishlist` : `Added "${product.name}" to wishlist`,
+            wasFavorite ? "info" : "success",
+            wasFavorite
+              ? {
+                  action: {
+                    label: "Undo",
+                    onClick: () =>
+                      restoreWishlistItem({
+                        productId: product.id,
+                        slug: product.slug,
+                        name: product.name,
+                        price: product.price,
+                        image: product.images[0],
+                        metal: product.metal,
+                      }),
+                  },
+                }
+              : undefined
+          );
         }}
         whileTap={{ scale: 0.8 }}
         aria-label={isFavorite ? "Remove from wishlist" : "Add to wishlist"}
@@ -69,6 +118,11 @@ export default function ProductCard({ product }) {
           <h3 className="font-serif text-lg text-forest truncate">{product.name}</h3>
         </Link>
         <p className="text-xs text-charcoal/50 mt-1">{product.metal}</p>
+        {count > 0 && (
+          <div className="mt-1.5">
+            <StarRatingDisplay value={average} size={12} count={count} />
+          </div>
+        )}
         <div className="flex items-center justify-between mt-3">
           <span className="text-forest font-medium">₹{product.price.toLocaleString("en-IN")}</span>
           <motion.button

@@ -6,9 +6,10 @@ import { useWishlistStore } from "@/store/wishlistStore";
 import { useCartStore } from "@/store/cartStore";
 import { getProductBySlug } from "@/data/products";
 import Reveal from "@/components/Reveal";
+import { toast } from "@/store/toastStore";
 
 export default function WishlistPage() {
-  const { items, removeItem } = useWishlistStore();
+  const { items, removeItem, restoreItem } = useWishlistStore();
   const addToCart = useCartStore((s) => s.addItem);
 
   if (items.length === 0) {
@@ -38,7 +39,17 @@ export default function WishlistPage() {
 
   function handleAddToCart(item) {
     const fullProduct = getProductBySlug(item.slug);
-    if (fullProduct) addToCart(fullProduct, 1, null);
+    if (fullProduct) {
+      addToCart(fullProduct, 1, null);
+      toast(`Added "${item.name}" to cart`, "success");
+    }
+  }
+
+  function handleRemove(item) {
+    removeItem(item.productId);
+    toast(`Removed "${item.name}" from wishlist`, "info", {
+      action: { label: "Undo", onClick: () => restoreItem(item) },
+    });
   }
 
   return (
@@ -50,7 +61,7 @@ export default function WishlistPage() {
         </p>
       </Reveal>
 
-      <div className="grid sm:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {items.map((item) => (
           <div key={item.productId} className="flex gap-4 bg-white rounded-xl p-4 shadow-sm">
             <Link href={`/product/${item.slug}`} className="relative w-24 h-24 rounded-lg overflow-hidden flex-shrink-0">
@@ -70,7 +81,7 @@ export default function WishlistPage() {
                   Add to Cart
                 </button>
                 <button
-                  onClick={() => removeItem(item.productId)}
+                  onClick={() => handleRemove(item)}
                   className="text-xs text-red-500 uppercase tracking-widest"
                 >
                   Remove

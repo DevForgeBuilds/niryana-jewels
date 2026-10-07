@@ -2,7 +2,12 @@ import Image from "next/image";
 import { ASSETS, STORE_GALLERY } from "@/data/mediaManifest";
 import Reveal from "@/components/Reveal";
 
-export const metadata = { title: "About Us | Niryana Jewels" };
+export const metadata = {
+  title: "About Us | Niryana Jewels",
+  description:
+    "Niryana Jewels began in Surat with a simple belief: jewellery should carry meaning, not just shine. Discover our story, craftsmanship and certified metal purity.",
+  alternates: { canonical: "https://niryana-jewels-iota.vercel.app/about" },
+};
 
 export default function AboutPage() {
   return (
@@ -27,7 +32,13 @@ export default function AboutPage() {
         {STORE_GALLERY.map((src, i) => (
           <Reveal key={i} delay={i * 0.1}>
             <div className="relative aspect-[4/5] rounded-2xl overflow-hidden shadow-sm">
-              <Image src={src} alt="Niryana Jewels store" fill sizes="33vw" className="object-cover" />
+              <Image
+                src={src}
+                alt={`Niryana Jewels store interior, Surat — photo ${i + 1}`}
+                fill
+                sizes="33vw"
+                className="object-cover"
+              />
             </div>
           </Reveal>
         ))}

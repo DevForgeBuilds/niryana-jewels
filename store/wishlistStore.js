@@ -36,6 +36,14 @@ export const useWishlistStore = create(
       removeItem: (productId) =>
         set((state) => ({ items: state.items.filter((i) => i.productId !== productId) })),
 
+      // Re-insert a previously removed favorite verbatim (used by the
+      // toast "Undo" action).
+      restoreItem: (item) =>
+        set((state) => {
+          if (state.items.some((i) => i.productId === item.productId)) return state;
+          return { items: [...state.items, item] };
+        }),
+
       clearWishlist: () => set({ items: [] }),
     }),
     { name: "niryana-wishlist" }

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useAdminStore } from "@/store/adminStore";
+import { toast } from "@/store/toastStore";
 
 export default function CategoriesPage() {
   const { categories, products, addCategory, renameCategory, deleteCategory } = useAdminStore();
@@ -95,7 +96,7 @@ export default function CategoriesPage() {
                       <button
                         onClick={() => {
                           if (countFor(c.slug) > 0) {
-                            alert("Move or delete products in this category first.");
+                            toast("Move or delete products in this category first.", "error");
                             return;
                           }
                           if (confirm(`Delete category "${c.name}"?`)) deleteCategory(c.slug);

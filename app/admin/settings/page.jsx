@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useAdminStore } from "@/store/adminStore";
 import { useAdminAuthStore, DEMO_ADMIN_PASSWORD } from "@/store/adminAuthStore";
+import { toast } from "@/store/toastStore";
 
 export default function SettingsPage() {
   const resetDemoData = useAdminStore((s) => s.resetDemoData);
@@ -27,10 +28,10 @@ export default function SettingsPage() {
   function handlePasswordChange(e) {
     e.preventDefault();
     if (pw.current !== DEMO_ADMIN_PASSWORD) {
-      alert("Current password incorrect (demo password is fixed in this prototype).");
+      toast("Current password incorrect (demo password is fixed in this prototype).", "error");
       return;
     }
-    alert("In production this would update the admin's password hash in MySQL `users` table. (Demo mode: password stays as-is.)");
+    toast("In production this would update the admin's password hash in MySQL `users` table. (Demo mode: password stays as-is.)", "info");
     setPw({ current: "", next: "" });
   }
 

@@ -27,7 +27,7 @@ export default function FeaturedCollections() {
                 <div className="relative aspect-[4/5] overflow-hidden">
                   <Image
                     src={c.image}
-                    alt={c.name}
+                    alt={`${c.name} collection — handcrafted jewellery by Niryana Jewels`}
                     fill
                     sizes="(max-width: 768px) 100vw, 33vw"
                     className="object-cover transition-transform duration-700 ease-apple group-hover:scale-105"

@@ -55,9 +55,16 @@ export default function Footer() {
           <h4 className="text-gold uppercase tracking-widest text-xs mb-4">Company</h4>
           <ul className="space-y-2 text-sm text-cream/70">
             <li><Link href="/about" className="hover:text-gold">About Us</Link></li>
+            <li><Link href="/faq" className="hover:text-gold">FAQ</Link></li>
             <li><Link href="/contact" className="hover:text-gold">Contact</Link></li>
             <li><Link href="/account" className="hover:text-gold">My Account</Link></li>
             <li><Link href="/cart" className="hover:text-gold">Cart</Link></li>
+          </ul>
+          <h4 className="text-gold uppercase tracking-widest text-xs mb-4 mt-6">Legal</h4>
+          <ul className="space-y-2 text-sm text-cream/70">
+            <li><Link href="/privacy-policy" className="hover:text-gold">Privacy Policy</Link></li>
+            <li><Link href="/terms" className="hover:text-gold">Terms &amp; Conditions</Link></li>
+            <li><Link href="/shipping-policy" className="hover:text-gold">Shipping Policy</Link></li>
           </ul>
         </div>
 

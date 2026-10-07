@@ -77,7 +77,7 @@ export default function AnalyticsPage() {
         </div>
       </div>
 
-      <div className="grid md:grid-cols-2 gap-6 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
         <div className="bg-white rounded-xl p-6 shadow-sm">
           <h2 className="font-serif text-lg text-forest mb-4">Revenue Trend</h2>
           <LineChart points={revenueByDate} />
@@ -88,7 +88,7 @@ export default function AnalyticsPage() {
         </div>
       </div>
 
-      <div className="grid md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="bg-white rounded-xl p-6 shadow-sm">
           <h2 className="font-serif text-lg text-forest mb-4">Top Selling Products</h2>
           <BarChart data={topProducts} color="#C9A86A" format={(v) => `${v} sold`} />

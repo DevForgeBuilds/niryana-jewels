@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Reveal from "@/components/Reveal";
+import { toast } from "@/store/toastStore";
 
 export default function ContactPage() {
   const [sent, setSent] = useState(false);
@@ -13,7 +14,7 @@ export default function ContactPage() {
         <h1 className="font-serif text-4xl md:text-5xl text-forest">Contact Us</h1>
       </Reveal>
 
-      <div className="grid md:grid-cols-2 gap-12">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
         <Reveal>
           <div className="rounded-2xl overflow-hidden mb-6 h-72">
             <iframe
@@ -49,6 +50,7 @@ export default function ContactPage() {
               onSubmit={(e) => {
                 e.preventDefault();
                 setSent(true);
+                toast("Message sent! We'll get back to you shortly.", "success");
               }}
               className="space-y-4 bg-white p-6 rounded-xl shadow-sm"
             >

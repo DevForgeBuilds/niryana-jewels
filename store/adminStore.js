@@ -125,7 +125,33 @@ export const useAdminStore = create(
           coupons: state.coupons.filter((c) => c.id !== id),
         })),
 
+      // Looks up an active, non-expired coupon by code (case-insensitive).
+      // Used by the checkout page to validate + preview the discount live.
+      findValidCoupon: (code) => {
+        const c = get().coupons.find(
+          (c) => c.code.toLowerCase() === String(code).trim().toLowerCase()
+        );
+        if (!c) return null;
+        if (!c.active) return null;
+        if (c.expiresAt && new Date(c.expiresAt) < new Date()) return null;
+        return c;
+      },
+
+      incrementCouponUsage: (id) =>
+        set((state) => ({
+          coupons: state.coupons.map((c) => (c.id === id ? { ...c, usedCount: (c.usedCount || 0) + 1 } : c)),
+        })),
+
       // ---------------- Reviews ----------------
+      addReview: (review) =>
+        set((state) => ({
+          reviews: [
+            { ...review, id: Date.now(), status: "pending", createdAt: new Date().toISOString().slice(0, 10) },
+            ...state.reviews,
+          ],
+          activityLog: [logEntry("Review Submitted", review.productName), ...state.activityLog].slice(0, 100),
+        })),
+
       approveReview: (id) =>
         set((state) => ({
           reviews: state.reviews.map((r) => (r.id === id ? { ...r, status: "approved" } : r)),

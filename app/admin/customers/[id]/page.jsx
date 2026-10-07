@@ -19,7 +19,7 @@ export default function CustomerDetailPage() {
         ← Back to Customers
       </button>
 
-      <div className="grid md:grid-cols-3 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <div className="bg-white rounded-xl p-6 shadow-sm md:col-span-1">
           <div className="w-16 h-16 rounded-full bg-forest text-cream flex items-center justify-center font-serif text-2xl mb-4">
             {customer.name.charAt(0)}

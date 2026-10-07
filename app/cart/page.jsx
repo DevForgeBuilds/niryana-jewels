@@ -5,13 +5,21 @@ import Link from "next/link";
 import { useCartStore } from "@/store/cartStore";
 import { useAdminStore } from "@/store/adminStore";
 import Reveal from "@/components/Reveal";
+import { toast } from "@/store/toastStore";
 
 export default function CartPage() {
-  const { items, removeItem, updateQuantity, subtotal } = useCartStore();
+  const { items, removeItem, restoreItem, updateQuantity, subtotal } = useCartStore();
   const gstRate = useAdminStore((s) => s.settings.gstRate);
   const sub = subtotal();
   const gst = Math.round(sub * (gstRate / 100));
   const total = sub + gst;
+
+  function handleRemove(item) {
+    removeItem(item.productId, item.size);
+    toast(`Removed "${item.name}" from cart`, "info", {
+      action: { label: "Undo", onClick: () => restoreItem(item) },
+    });
+  }
 
   if (items.length === 0) {
     return (
@@ -30,7 +38,7 @@ export default function CartPage() {
         <h1 className="font-serif text-4xl text-forest mb-10">Your Cart</h1>
       </Reveal>
 
-      <div className="grid md:grid-cols-3 gap-10">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
         <div className="md:col-span-2 space-y-4">
           {items.map((item) => (
             <div key={`${item.productId}-${item.size}`} className="flex gap-4 bg-white rounded-xl p-4 shadow-sm">
@@ -58,7 +66,7 @@ export default function CartPage() {
                     </button>
                   </div>
                   <button
-                    onClick={() => removeItem(item.productId, item.size)}
+                    onClick={() => handleRemove(item)}
                     className="text-xs text-red-500 uppercase tracking-widest"
                   >
                     Remove

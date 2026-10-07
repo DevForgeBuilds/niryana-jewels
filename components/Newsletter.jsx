@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Reveal from "./Reveal";
+import { toast } from "@/store/toastStore";
 
 export default function Newsletter() {
   const [email, setEmail] = useState("");
@@ -11,6 +12,7 @@ export default function Newsletter() {
     e.preventDefault();
     // TODO: wire up to backend / email service (Nodemailer / Mailchimp)
     setSent(true);
+    toast("You're subscribed! Welcome to the Niryana circle ✨", "success");
   }
 
   return (

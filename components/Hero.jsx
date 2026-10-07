@@ -11,6 +11,7 @@ export default function Hero() {
         className="absolute inset-0 h-full w-full object-cover opacity-80"
         src={HERO_VIDEO}
         poster={HERO_POSTER_IMAGE}
+        aria-label="Niryana Jewels handcrafted fine jewellery showcase"
         autoPlay
         muted
         loop

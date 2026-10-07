@@ -47,6 +47,26 @@ export const useCartStore = create(
           ),
         })),
 
+      // Re-insert a previously removed line item verbatim (used by the
+      // toast "Undo" action) — merges into an existing matching line if one
+      // was added again in the meantime, otherwise restores it as-is.
+      restoreItem: (item) =>
+        set((state) => {
+          const existing = state.items.find(
+            (i) => i.productId === item.productId && i.size === item.size
+          );
+          if (existing) {
+            return {
+              items: state.items.map((i) =>
+                i.productId === item.productId && i.size === item.size
+                  ? { ...i, quantity: i.quantity + item.quantity }
+                  : i
+              ),
+            };
+          }
+          return { items: [...state.items, item] };
+        }),
+
       updateQuantity: (productId, size, quantity) =>
         set((state) => ({
           items: state.items

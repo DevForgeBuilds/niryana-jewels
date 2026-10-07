@@ -2,8 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url("https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Inter:wght@300..700&display=swap");
-
 html {
   scroll-behavior: smooth;
 }
@@ -11,11 +9,11 @@ html {
 body {
   background-color: #faf8f4;
   color: #2a2a2a;
-  font-family: "Inter", "Helvetica Neue", Arial, sans-serif;
+  font-family: var(--font-inter), "Helvetica Neue", Arial, sans-serif;
 }
 
 h1, h2, h3, h4, .font-serif {
-  font-family: "Playfair Display", Georgia, serif;
+  font-family: var(--font-playfair), Georgia, serif;
 }
 
 ::selection {
@@ -44,4 +42,35 @@ h1, h2, h3, h4, .font-serif {
 ::-webkit-scrollbar-thumb {
   background: #c9a86a;
   border-radius: 999px;
+}
+
+/* Dual-thumb price range slider (Shop page) */
+.range-thumb {
+  height: 6px;
+}
+.range-thumb::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  pointer-events: auto;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #1b3a2f;
+  border: 2px solid #c9a86a;
+  cursor: pointer;
+}
+.range-thumb::-moz-range-thumb {
+  pointer-events: auto;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #1b3a2f;
+  border: 2px solid #c9a86a;
+  cursor: pointer;
+}
+.range-thumb::-webkit-slider-runnable-track {
+  background: transparent;
+}
+.range-thumb::-moz-range-track {
+  background: transparent;
 }

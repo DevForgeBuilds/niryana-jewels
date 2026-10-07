@@ -8,6 +8,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { LOGO_URL, LOGO_URL_LIGHT } from "@/data/mediaManifest";
 import { useCartStore } from "@/store/cartStore";
 import { useWishlistStore } from "@/store/wishlistStore";
+import { useCartDrawerStore } from "@/store/cartDrawerStore";
+import SearchOverlay from "./SearchOverlay";
 
 const LINKS = [
   { href: "/shop", label: "Shop" },
@@ -20,8 +22,10 @@ export default function Navbar() {
   const pathname = usePathname();
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
   const count = useCartStore((s) => s.items.reduce((n, i) => n + i.quantity, 0));
   const wishlistCount = useWishlistStore((s) => s.items.length);
+  const openCartDrawer = useCartDrawerStore((s) => s.open);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 40);
@@ -72,6 +76,16 @@ export default function Navbar() {
         </nav>
 
         <div className="flex items-center gap-4">
+          <button
+            onClick={() => setSearchOpen(true)}
+            aria-label="Search"
+            className={`hover:text-gold transition-colors ${light ? "text-cream" : "text-forest"}`}
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
+              <circle cx="11" cy="11" r="7" />
+              <path d="M20 20l-3.5-3.5" strokeLinecap="round" />
+            </svg>
+          </button>
           <Link
             href="/account"
             className={`hidden sm:inline text-sm tracking-wide hover:text-gold transition-colors ${
@@ -103,8 +117,8 @@ export default function Navbar() {
               )}
             </AnimatePresence>
           </Link>
-          <Link
-            href="/cart"
+          <button
+            onClick={openCartDrawer}
             className={`relative hover:text-gold transition-colors ${light ? "text-cream" : "text-forest"}`}
             aria-label="Cart"
           >
@@ -127,7 +141,7 @@ export default function Navbar() {
                 </motion.span>
               )}
             </AnimatePresence>
-          </Link>
+          </button>
           <button
             className={light ? "md:hidden text-cream" : "md:hidden text-forest"}
             onClick={() => setOpen((o) => !o)}
@@ -140,21 +154,64 @@ export default function Navbar() {
         </div>
       </div>
 
-      {open && (
-        <div className="md:hidden bg-cream border-t border-gold/30 px-6 py-4 flex flex-col gap-4">
-          {LINKS.map((l) => (
-            <Link key={l.href} href={l.href} className="text-sm tracking-widest uppercase text-forest" onClick={() => setOpen(false)}>
-              {l.label}
-            </Link>
-          ))}
-          <Link href="/wishlist" className="text-sm tracking-widest uppercase text-forest" onClick={() => setOpen(false)}>
-            Wishlist{wishlistCount > 0 ? ` (${wishlistCount})` : ""}
-          </Link>
-          <Link href="/account" className="text-sm tracking-widest uppercase text-forest" onClick={() => setOpen(false)}>
-            Account
-          </Link>
-        </div>
-      )}
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.25, ease: "easeInOut" }}
+            className={`md:hidden overflow-hidden border-t ${
+              light
+                ? "bg-forest/95 backdrop-blur-md border-cream/10"
+                : "bg-cream border-gold/30"
+            }`}
+          >
+            <div className="px-6 py-4 flex flex-col gap-4">
+              <button
+                onClick={() => {
+                  setOpen(false);
+                  setSearchOpen(true);
+                }}
+                className={`flex items-center gap-2 text-sm tracking-widest uppercase ${light ? "text-cream" : "text-forest"}`}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                  <circle cx="11" cy="11" r="7" />
+                  <path d="M20 20l-3.5-3.5" strokeLinecap="round" />
+                </svg>
+                Search
+              </button>
+              {LINKS.map((l) => (
+                <Link
+                  key={l.href}
+                  href={l.href}
+                  className={`text-sm tracking-widest uppercase ${light ? "text-cream" : "text-forest"}`}
+                  onClick={() => setOpen(false)}
+                >
+                  {l.label}
+                </Link>
+              ))}
+              <Link
+                href="/wishlist"
+                className={`text-sm tracking-widest uppercase ${light ? "text-cream" : "text-forest"}`}
+                onClick={() => setOpen(false)}
+              >
+                Wishlist{wishlistCount > 0 ? ` (${wishlistCount})` : ""}
+              </Link>
+              <Link
+                href="/account"
+                className={`text-sm tracking-widest uppercase ${light ? "text-cream" : "text-forest"}`}
+                onClick={() => setOpen(false)}
+              >
+                Account
+              </Link>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <SearchOverlay isOpen={searchOpen} onClose={() => setSearchOpen(false)} />
+
     </header>
   );
 }
