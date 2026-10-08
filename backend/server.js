@@ -4,8 +4,20 @@ const cors = require("cors");
 const crypto = require("crypto");
 const Razorpay = require("razorpay");
 
+const productsRouter = require("./routes/products");
+const categoriesRouter = require("./routes/categories");
+const collectionsRouter = require("./routes/collections");
+const ordersRouter = require("./routes/orders");
+const customersRouter = require("./routes/customers");
+const couponsRouter = require("./routes/coupons");
+const reviewsRouter = require("./routes/reviews");
+const returnsRouter = require("./routes/returns");
+const staffRouter = require("./routes/staff");
+const settingsRouter = require("./routes/settings");
+const activityRouter = require("./routes/activity");
+
 const app = express();
-app.use(express.json());
+app.use(express.json({ limit: "5mb" }));
 
 // ---------------------------------------------------------------------------
 // CORS: only allow requests from the deployed frontend(s). Add every domain
@@ -39,6 +51,23 @@ app.get("/", (_req, res) => {
 app.get("/health", (_req, res) => {
   res.json({ status: "ok", razorpayConfigured: Boolean(keyId && keySecret) });
 });
+
+// ---------------------------------------------------------------------------
+// MySQL-backed data API — products, orders, customers, coupons, reviews,
+// returns, staff, settings, festive collections & activity log. The Next.js
+// frontend (store/adminStore.js) calls these instead of using localStorage.
+// ---------------------------------------------------------------------------
+app.use("/api/products", productsRouter);
+app.use("/api/categories", categoriesRouter);
+app.use("/api/collections", collectionsRouter);
+app.use("/api/orders", ordersRouter);
+app.use("/api/customers", customersRouter);
+app.use("/api/coupons", couponsRouter);
+app.use("/api/reviews", reviewsRouter);
+app.use("/api/returns", returnsRouter);
+app.use("/api/staff", staffRouter);
+app.use("/api/settings", settingsRouter);
+app.use("/api/activity", activityRouter);
 
 // POST /api/razorpay/create-order
 // body: { amount: number (in rupees), receipt?: string }

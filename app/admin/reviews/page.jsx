@@ -88,7 +88,7 @@ export default function ReviewsPage() {
         )}
       </div>
       <p className="text-xs text-charcoal/40 mt-6">
-        Demo data — connect to a MySQL `reviews` table (product_id, user_id, rating, comment, status).
+        Live data from MySQL — updates automatically as customers submit reviews.
       </p>
     </div>
   );

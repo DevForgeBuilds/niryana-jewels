@@ -62,7 +62,7 @@ export default function ReturnsPage() {
         </table>
       </div>
       <p className="text-xs text-charcoal/40 mt-4">
-        Demo data — connect to a MySQL `returns` table (order_id, product_id, reason, amount, status).
+        Live data from MySQL — updates automatically as customers submit return requests.
       </p>
     </div>
   );

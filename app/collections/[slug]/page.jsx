@@ -1,20 +1,19 @@
-import { FESTIVE_COLLECTIONS, getFestiveCollection } from "@/data/products";
+import { FESTIVE_COLLECTIONS } from "@/data/products";
+import { getCollectionBySlugServer } from "@/lib/serverProducts";
 import CollectionClient from "./CollectionClient";
 
 const SITE_URL = "https://niryana-jewels-iota.vercel.app";
 
-// Pre-renders the 3 default collections for SEO. Collections added later via the
-// Admin Dashboard are still served (Next.js falls back to on-demand rendering for
-// any slug outside this list) but, since they only exist in the admin's browser
-// localStorage (see README "Admin API routes"), their metadata can't be generated
-// on the server until a real backend/database is wired up — generic metadata is
-// used in that case instead of failing.
+// Pre-renders the 3 default collections at build time for fast initial loads.
+// Collections added later via the Admin Dashboard are stored in MySQL and are
+// still served correctly — Next.js falls back to on-demand rendering for any
+// slug outside this static list, fetching live data via getCollectionBySlugServer.
 export function generateStaticParams() {
   return FESTIVE_COLLECTIONS.map((c) => ({ slug: c.slug }));
 }
 
 export async function generateMetadata({ params }) {
-  const collection = getFestiveCollection(params.slug);
+  const collection = await getCollectionBySlugServer(params.slug);
   if (!collection) {
     return {
       title: "Festive Collection | Niryana Jewels",

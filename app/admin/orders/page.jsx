@@ -88,7 +88,7 @@ export default function AdminOrdersPage() {
         </table>
       </div>
       <p className="text-xs text-charcoal/40 mt-4">
-        Demo data — connect to MySQL `orders`/`order_items` tables via `/api/admin/orders` for live data.
+        Live data from MySQL — updates automatically as customers place orders.
       </p>
     </div>
   );

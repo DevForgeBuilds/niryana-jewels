@@ -1,16 +1,19 @@
 "use client";
 
 import Link from "next/link";
-import { MOCK_CUSTOMERS } from "@/data/orders";
+import { useAdminStore } from "@/store/adminStore";
 import { downloadCSV } from "@/lib/csv";
 
 export default function AdminCustomersPage() {
+  const customers = useAdminStore((s) => s.customers);
+  const loading = useAdminStore((s) => s.loading);
+
   return (
     <div>
       <div className="flex items-center justify-between mb-8">
         <h1 className="font-serif text-3xl text-forest">Customers</h1>
         <button
-          onClick={() => downloadCSV("niryana-customers.csv", MOCK_CUSTOMERS)}
+          onClick={() => downloadCSV("niryana-customers.csv", customers)}
           className="border border-forest text-forest px-5 py-2.5 rounded-full text-sm uppercase tracking-widest hover:bg-forest hover:text-cream transition-colors"
         >
           Export CSV
@@ -29,7 +32,7 @@ export default function AdminCustomersPage() {
             </tr>
           </thead>
           <tbody>
-            {MOCK_CUSTOMERS.map((c) => (
+            {customers.map((c) => (
               <tr key={c.id} className="border-t">
                 <td className="py-3 px-4 font-medium text-forest">
                   <Link href={`/admin/customers/${c.id}`} className="hover:text-gold hover:underline">
@@ -44,10 +47,12 @@ export default function AdminCustomersPage() {
             ))}
           </tbody>
         </table>
+        {!loading && customers.length === 0 && (
+          <p className="text-center text-charcoal/50 py-10">No customers yet — they appear here automatically after the first order.</p>
+        )}
+        {loading && <p className="text-center text-charcoal/50 py-10">Loading…</p>}
       </div>
-      <p className="text-xs text-charcoal/40 mt-4">
-        Demo data — connect to MySQL `users` table joined with `orders` for live data.
-      </p>
+      <p className="text-xs text-charcoal/40 mt-4">Live data from MySQL — updates automatically as orders come in.</p>
     </div>
   );
 }

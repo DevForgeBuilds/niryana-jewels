@@ -6,23 +6,26 @@ import { useAdminAuthStore, DEMO_ADMIN_PASSWORD } from "@/store/adminAuthStore";
 import { toast } from "@/store/toastStore";
 
 export default function SettingsPage() {
-  const resetDemoData = useAdminStore((s) => s.resetDemoData);
   const settings = useAdminStore((s) => s.settings);
   const updateSettings = useAdminStore((s) => s.updateSettings);
   const [pw, setPw] = useState({ current: "", next: "" });
-  const [saved, setSaved] = useState(false);
   const [shipForm, setShipForm] = useState(settings);
 
   useEffect(() => setShipForm(settings), [settings]);
 
-  function handleShippingSave(e) {
+  async function handleShippingSave(e) {
     e.preventDefault();
-    updateSettings({
-      gstRate: Number(shipForm.gstRate),
-      freeShippingThreshold: Number(shipForm.freeShippingThreshold),
-      flatShippingRate: Number(shipForm.flatShippingRate),
-      codEnabled: shipForm.codEnabled,
-    });
+    try {
+      await updateSettings({
+        gstRate: Number(shipForm.gstRate),
+        freeShippingThreshold: Number(shipForm.freeShippingThreshold),
+        flatShippingRate: Number(shipForm.flatShippingRate),
+        codEnabled: shipForm.codEnabled,
+      });
+      toast("Shipping & tax settings saved.", "success");
+    } catch (err) {
+      toast(`Failed to save settings: ${err.message}`, "error");
+    }
   }
 
   function handlePasswordChange(e) {
@@ -163,26 +166,6 @@ export default function SettingsPage() {
         </form>
       </section>
 
-      <section className="bg-white rounded-xl shadow-sm p-6">
-        <h2 className="font-serif text-xl text-forest mb-2">Demo Data</h2>
-        <p className="text-sm text-charcoal/60 mb-4">
-          Reset all products, orders, categories and coupons back to the original demo dataset
-          (useful after testing edits).
-        </p>
-        <button
-          onClick={() => {
-            if (confirm("Reset all admin demo data?")) {
-              resetDemoData();
-              setSaved(true);
-              setTimeout(() => setSaved(false), 2000);
-            }
-          }}
-          className="border border-red-400 text-red-500 px-6 py-2.5 rounded-full text-sm uppercase tracking-widest hover:bg-red-50 transition-colors"
-        >
-          Reset Demo Data
-        </button>
-        {saved && <p className="text-green-600 text-sm mt-2">Reset complete.</p>}
-      </section>
     </div>
   );
 }

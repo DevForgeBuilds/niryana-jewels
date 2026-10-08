@@ -1,360 +1,253 @@
 "use client";
 
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
-import { PRODUCTS, CATEGORIES as BASE_CATEGORIES, FESTIVE_COLLECTIONS } from "@/data/products";
-import { MOCK_ORDERS, MOCK_CUSTOMERS } from "@/data/orders";
-import { MOCK_REVIEWS, MOCK_RETURNS, MOCK_STAFF } from "@/data/adminExtras";
-
-const DEFAULT_COUPONS = [
-  { id: 1, code: "WELCOME10", type: "percent", value: 10, active: true, usedCount: 12, expiresAt: "2026-12-31" },
-  { id: 2, code: "FESTIVE500", type: "flat", value: 500, active: true, usedCount: 4, expiresAt: "2026-11-15" },
-  { id: 3, code: "RAKHI2026", type: "percent", value: 15, active: false, usedCount: 30, expiresAt: "2026-08-30" },
-];
-
-const DEFAULT_SETTINGS = {
-  gstRate: 3,
-  freeShippingThreshold: 5000,
-  flatShippingRate: 99,
-  codEnabled: true,
-};
-
-function logEntry(action, detail) {
-  return { id: Date.now() + Math.random(), action, detail, timestamp: new Date().toISOString() };
-}
+import { api } from "@/lib/api";
 
 // ---------------------------------------------------------------------------------
-// Admin demo store — persisted to localStorage so every edit survives reloads
-// within this browser. In production, replace every action here with a call to
-// /api/admin/* routes backed by MySQL (see README → "Admin API routes").
+// Admin store — now backed by the real MySQL database via the Express API
+// (backend/, deployed on Render). Every mutation here calls the backend first, then
+// updates local state from the response so every connected browser/device sees the
+// same data after a refresh. Call `init()` once (see components/AdminDataProvider)
+// to hydrate everything on app start.
 // ---------------------------------------------------------------------------------
-export const useAdminStore = create(
-  persist(
-    (set, get) => ({
-      products: PRODUCTS,
-      orders: MOCK_ORDERS,
-      customers: MOCK_CUSTOMERS,
-      categories: BASE_CATEGORIES,
-      coupons: DEFAULT_COUPONS,
-      reviews: MOCK_REVIEWS,
-      returns: MOCK_RETURNS,
-      staff: MOCK_STAFF,
-      settings: DEFAULT_SETTINGS,
-      festiveCollections: FESTIVE_COLLECTIONS,
-      activityLog: [],
+export const useAdminStore = create((set, get) => ({
+  products: [],
+  orders: [],
+  customers: [],
+  categories: [],
+  coupons: [],
+  reviews: [],
+  returns: [],
+  staff: [],
+  settings: { gstRate: 3, freeShippingThreshold: 5000, flatShippingRate: 99, codEnabled: true },
+  festiveCollections: [],
+  activityLog: [],
+  loading: true,
+  loadError: null,
+  initialized: false,
 
-      pushLog: (action, detail) =>
-        set((state) => ({ activityLog: [logEntry(action, detail), ...state.activityLog].slice(0, 100) })),
+  init: async () => {
+    if (get().initialized || get()._initializing) return;
+    set({ _initializing: true, loading: true, loadError: null });
+    try {
+      const [products, orders, customers, categories, coupons, reviews, returns, staff, settings, festiveCollections, activityLog] =
+        await Promise.all([
+          api.getProducts(),
+          api.getOrders(),
+          api.getCustomers(),
+          api.getCategories(),
+          api.getCoupons(),
+          api.getReviews(),
+          api.getReturns(),
+          api.getStaff(),
+          api.getSettings(),
+          api.getCollections(),
+          api.getActivity(),
+        ]);
+      set({
+        products,
+        orders,
+        customers,
+        categories,
+        coupons,
+        reviews,
+        returns,
+        staff,
+        settings,
+        festiveCollections,
+        activityLog,
+        loading: false,
+        initialized: true,
+        _initializing: false,
+      });
+    } catch (err) {
+      console.error("Failed to load admin data from backend:", err);
+      set({ loading: false, loadError: err.message, _initializing: false });
+    }
+  },
 
-      // ---------------- Products ----------------
-      addProduct: (product) =>
-        set((state) => ({
-          products: [
-            ...state.products,
-            { ...product, id: Date.now(), slug: slugify(product.name) },
-          ],
-          activityLog: [logEntry("Product Added", product.name), ...state.activityLog].slice(0, 100),
-        })),
+  refreshProducts: async () => set({ products: await api.getProducts() }),
+  refreshOrders: async () => set({ orders: await api.getOrders() }),
+  refreshActivity: async () => set({ activityLog: await api.getActivity() }),
 
-      updateProduct: (id, updates) =>
-        set((state) => ({
-          products: state.products.map((p) => (p.id === id ? { ...p, ...updates } : p)),
-          activityLog: [logEntry("Product Updated", updates.name || `#${id}`), ...state.activityLog].slice(0, 100),
-        })),
+  pushLog: async (action, detail) => {
+    await api.pushLog(action, detail);
+    set({ activityLog: await api.getActivity() });
+  },
 
-      deleteProduct: (id) =>
-        set((state) => {
-          const p = state.products.find((x) => x.id === id);
-          return {
-            products: state.products.filter((p) => p.id !== id),
-            activityLog: [logEntry("Product Deleted", p?.name || `#${id}`), ...state.activityLog].slice(0, 100),
-          };
-        }),
+  // ---------------- Products ----------------
+  addProduct: async (product) => {
+    const created = await api.createProduct(product);
+    set((state) => ({ products: [created, ...state.products] }));
+    get().refreshActivity();
+    return created;
+  },
 
-      adjustStock: (id, delta) =>
-        set((state) => ({
-          products: state.products.map((p) =>
-            p.id === id
-              ? { ...p, stock_quantity: Math.max(0, (p.stock_quantity ?? 0) + delta) }
-              : p
-          ),
-        })),
+  updateProduct: async (id, updates) => {
+    const updated = await api.updateProduct(id, updates);
+    set((state) => ({ products: state.products.map((p) => (p.id === id ? updated : p)) }));
+    get().refreshActivity();
+    return updated;
+  },
 
-      // ---------------- Orders ----------------
-      // Called from the live checkout flow so a real customer order shows up
-      // here immediately — in production this would be a MySQL INSERT instead,
-      // triggered from the same place in the checkout flow.
-      addOrder: (orderData) =>
-        set((state) => {
-          const nextId = state.orders.length
-            ? Math.max(...state.orders.map((o) => o.id)) + 1
-            : 1;
-          const newOrder = {
-            id: nextId,
-            orderNumber: orderData.orderNumber,
-            customerName: orderData.customerName,
-            phone: orderData.phone,
-            email: orderData.email,
-            address: orderData.address,
-            items: orderData.items,
-            subtotal: orderData.subtotal,
-            discount: orderData.discount || 0,
-            couponCode: orderData.couponCode || null,
-            gst: orderData.gst,
-            codFee: orderData.codFee || 0,
-            total: orderData.total,
-            paymentMethod: orderData.paymentMethod,
-            giftWrap: !!orderData.giftWrap,
-            giftNote: orderData.giftNote || "",
-            status: orderData.paymentMethod === "cod" ? "pending" : "processing",
-            createdAt: orderData.createdAt || new Date().toISOString().slice(0, 10),
-          };
+  deleteProduct: async (id) => {
+    await api.deleteProduct(id);
+    set((state) => ({ products: state.products.filter((p) => p.id !== id) }));
+    get().refreshActivity();
+  },
 
-          // Decrement stock for each purchased product, where we can match it.
-          const products = state.products.map((p) => {
-            const line = orderData.items.find((i) => i.productId === p.id);
-            if (!line) return p;
-            return { ...p, stock_quantity: Math.max(0, (p.stock_quantity ?? 0) - line.quantity) };
-          });
+  adjustStock: async (id, delta) => {
+    const updated = await api.adjustStock(id, delta);
+    set((state) => ({ products: state.products.map((p) => (p.id === id ? updated : p)) }));
+  },
 
-          // Upsert the customer record so repeat buyers accumulate order history.
-          const existingCustomer = state.customers.find(
-            (c) => c.email.toLowerCase() === orderData.email.toLowerCase()
-          );
-          const customers = existingCustomer
-            ? state.customers.map((c) =>
-                c.email.toLowerCase() === orderData.email.toLowerCase()
-                  ? { ...c, orders: c.orders + 1, totalSpent: c.totalSpent + orderData.total }
-                  : c
-              )
-            : [
-                ...state.customers,
-                {
-                  id: state.customers.length
-                    ? Math.max(...state.customers.map((c) => c.id)) + 1
-                    : 1,
-                  name: orderData.customerName,
-                  email: orderData.email,
-                  phone: orderData.phone,
-                  orders: 1,
-                  totalSpent: orderData.total,
-                },
-              ];
+  // ---------------- Orders ----------------
+  // Called from the live checkout flow so a real customer order is written straight
+  // into MySQL and shows up under Admin → Orders immediately — on any device/browser.
+  addOrder: async (orderData) => {
+    const created = await api.createOrder(orderData);
+    const [products, customers, activityLog] = await Promise.all([api.getProducts(), api.getCustomers(), api.getActivity()]);
+    set((state) => ({ orders: [created, ...state.orders], products, customers, activityLog }));
+    return created;
+  },
 
-          return {
-            orders: [newOrder, ...state.orders],
-            products,
-            customers,
-            activityLog: [
-              logEntry("New Order Placed", `${newOrder.orderNumber} — ₹${newOrder.total.toLocaleString("en-IN")}`),
-              ...state.activityLog,
-            ].slice(0, 100),
-          };
-        }),
+  updateOrderStatus: async (id, status) => {
+    const updated = await api.updateOrderStatus(id, status);
+    set((state) => ({ orders: state.orders.map((o) => (o.id === id ? updated : o)) }));
+    get().refreshActivity();
+  },
 
-      updateOrderStatus: (id, status) =>
-        set((state) => ({
-          orders: state.orders.map((o) => (o.id === id ? { ...o, status } : o)),
-          activityLog: [logEntry("Order Status Updated", `#${id} → ${status}`), ...state.activityLog].slice(0, 100),
-        })),
+  getOrderById: (id) => get().orders.find((o) => String(o.id) === String(id)),
 
+  // ---------------- Customers ----------------
+  getCustomerById: (id) => get().customers.find((c) => String(c.id) === String(id)),
 
-      getOrderById: (id) => get().orders.find((o) => String(o.id) === String(id)),
+  // ---------------- Categories ----------------
+  addCategory: async (name) => {
+    const created = await api.createCategory(name);
+    set((state) => ({ categories: [...state.categories, created] }));
+    get().refreshActivity();
+  },
 
-      // ---------------- Customers ----------------
-      getCustomerById: (id) => get().customers.find((c) => String(c.id) === String(id)),
+  renameCategory: async (slug, name) => {
+    await api.renameCategory(slug, name);
+    set((state) => ({ categories: state.categories.map((c) => (c.slug === slug ? { ...c, name } : c)) }));
+  },
 
-      // ---------------- Categories ----------------
-      addCategory: (name) =>
-        set((state) => ({
-          categories: [...state.categories, { slug: slugify(name), name }],
-          activityLog: [logEntry("Category Added", name), ...state.activityLog].slice(0, 100),
-        })),
+  deleteCategory: async (slug) => {
+    await api.deleteCategory(slug);
+    set((state) => ({ categories: state.categories.filter((c) => c.slug !== slug) }));
+  },
 
-      renameCategory: (slug, name) =>
-        set((state) => ({
-          categories: state.categories.map((c) => (c.slug === slug ? { ...c, name } : c)),
-        })),
+  // ---------------- Festive Collections ----------------
+  addFestiveCollection: async (collection) => {
+    const created = await api.createCollection(collection);
+    set((state) => ({ festiveCollections: [...state.festiveCollections, created] }));
+    get().refreshActivity();
+    return created;
+  },
 
-      deleteCategory: (slug) =>
-        set((state) => ({
-          categories: state.categories.filter((c) => c.slug !== slug),
-        })),
+  updateFestiveCollection: async (slug, updates) => {
+    const updated = await api.updateCollection(slug, updates);
+    set((state) => ({ festiveCollections: state.festiveCollections.map((c) => (c.slug === slug ? updated : c)) }));
+    get().refreshActivity();
+  },
 
-      // ---------------- Festive Collections ----------------
-      addFestiveCollection: (collection) =>
-        set((state) => {
-          const slug = collection.slug?.trim() ? slugify(collection.slug) : slugify(collection.name);
-          if (state.festiveCollections.some((c) => c.slug === slug)) {
-            return state; // slug already exists — caller should check first
-          }
-          return {
-            festiveCollections: [
-              ...state.festiveCollections,
-              {
-                accent: "gold",
-                heroImage: "",
-                heroVideo: "",
-                productSlugs: [],
-                ...collection,
-                slug,
-              },
-            ],
-            activityLog: [logEntry("Festive Collection Added", collection.name), ...state.activityLog].slice(0, 100),
-          };
-        }),
+  deleteFestiveCollection: async (slug) => {
+    await api.deleteCollection(slug);
+    set((state) => ({ festiveCollections: state.festiveCollections.filter((c) => c.slug !== slug) }));
+    get().refreshActivity();
+  },
 
-      updateFestiveCollection: (slug, updates) =>
-        set((state) => ({
-          festiveCollections: state.festiveCollections.map((c) =>
-            c.slug === slug ? { ...c, ...updates } : c
-          ),
-          activityLog: [logEntry("Festive Collection Updated", updates.name || slug), ...state.activityLog].slice(
-            0,
-            100
-          ),
-        })),
+  toggleProductInCollection: async (collectionSlug, productSlug) => {
+    const updated = await api.toggleProductInCollection(collectionSlug, productSlug);
+    set((state) => ({ festiveCollections: state.festiveCollections.map((c) => (c.slug === collectionSlug ? updated : c)) }));
+  },
 
-      deleteFestiveCollection: (slug) =>
-        set((state) => {
-          const c = state.festiveCollections.find((x) => x.slug === slug);
-          return {
-            festiveCollections: state.festiveCollections.filter((x) => x.slug !== slug),
-            activityLog: [logEntry("Festive Collection Deleted", c?.name || slug), ...state.activityLog].slice(
-              0,
-              100
-            ),
-          };
-        }),
+  // ---------------- Coupons ----------------
+  addCoupon: async (coupon) => {
+    const created = await api.createCoupon(coupon);
+    set((state) => ({ coupons: [...state.coupons, created] }));
+    get().refreshActivity();
+  },
 
-      toggleProductInCollection: (collectionSlug, productSlug) =>
-        set((state) => ({
-          festiveCollections: state.festiveCollections.map((c) => {
-            if (c.slug !== collectionSlug) return c;
-            const has = c.productSlugs.includes(productSlug);
-            return {
-              ...c,
-              productSlugs: has
-                ? c.productSlugs.filter((s) => s !== productSlug)
-                : [...c.productSlugs, productSlug],
-            };
-          }),
-        })),
+  toggleCoupon: async (id) => {
+    const updated = await api.toggleCoupon(id);
+    set((state) => ({ coupons: state.coupons.map((c) => (c.id === id ? updated : c)) }));
+  },
 
-      // ---------------- Coupons ----------------
-      addCoupon: (coupon) =>
-        set((state) => ({
-          coupons: [...state.coupons, { ...coupon, id: Date.now(), usedCount: 0 }],
-          activityLog: [logEntry("Coupon Created", coupon.code), ...state.activityLog].slice(0, 100),
-        })),
+  deleteCoupon: async (id) => {
+    await api.deleteCoupon(id);
+    set((state) => ({ coupons: state.coupons.filter((c) => c.id !== id) }));
+  },
 
-      toggleCoupon: (id) =>
-        set((state) => ({
-          coupons: state.coupons.map((c) => (c.id === id ? { ...c, active: !c.active } : c)),
-        })),
+  // Looks up an active, non-expired coupon by code (case-insensitive) from local
+  // cache first (instant UI feedback); checkout double-checks against the backend
+  // via api.validateCoupon before actually applying it.
+  findValidCoupon: (code) => {
+    const c = get().coupons.find((c) => c.code.toLowerCase() === String(code).trim().toLowerCase());
+    if (!c) return null;
+    if (!c.active) return null;
+    if (c.expiresAt && new Date(c.expiresAt) < new Date()) return null;
+    return c;
+  },
 
-      deleteCoupon: (id) =>
-        set((state) => ({
-          coupons: state.coupons.filter((c) => c.id !== id),
-        })),
+  incrementCouponUsage: async (id) => {
+    await api.incrementCouponUsage(id);
+    set((state) => ({ coupons: state.coupons.map((c) => (c.id === id ? { ...c, usedCount: (c.usedCount || 0) + 1 } : c)) }));
+  },
 
-      // Looks up an active, non-expired coupon by code (case-insensitive).
-      // Used by the checkout page to validate + preview the discount live.
-      findValidCoupon: (code) => {
-        const c = get().coupons.find(
-          (c) => c.code.toLowerCase() === String(code).trim().toLowerCase()
-        );
-        if (!c) return null;
-        if (!c.active) return null;
-        if (c.expiresAt && new Date(c.expiresAt) < new Date()) return null;
-        return c;
-      },
+  // ---------------- Reviews ----------------
+  addReview: async (review) => {
+    const created = await api.addReview(review);
+    set((state) => ({ reviews: [created, ...state.reviews] }));
+    get().refreshActivity();
+  },
 
-      incrementCouponUsage: (id) =>
-        set((state) => ({
-          coupons: state.coupons.map((c) => (c.id === id ? { ...c, usedCount: (c.usedCount || 0) + 1 } : c)),
-        })),
+  approveReview: async (id) => {
+    await api.approveReview(id);
+    set((state) => ({ reviews: state.reviews.map((r) => (r.id === id ? { ...r, status: "approved" } : r)) }));
+    get().refreshActivity();
+  },
 
-      // ---------------- Reviews ----------------
-      addReview: (review) =>
-        set((state) => ({
-          reviews: [
-            { ...review, id: Date.now(), status: "pending", createdAt: new Date().toISOString().slice(0, 10) },
-            ...state.reviews,
-          ],
-          activityLog: [logEntry("Review Submitted", review.productName), ...state.activityLog].slice(0, 100),
-        })),
+  rejectReview: async (id) => {
+    await api.rejectReview(id);
+    set((state) => ({ reviews: state.reviews.map((r) => (r.id === id ? { ...r, status: "rejected" } : r)) }));
+  },
 
-      approveReview: (id) =>
-        set((state) => ({
-          reviews: state.reviews.map((r) => (r.id === id ? { ...r, status: "approved" } : r)),
-          activityLog: [logEntry("Review Approved", `#${id}`), ...state.activityLog].slice(0, 100),
-        })),
+  deleteReview: async (id) => {
+    await api.deleteReview(id);
+    set((state) => ({ reviews: state.reviews.filter((r) => r.id !== id) }));
+  },
 
-      rejectReview: (id) =>
-        set((state) => ({
-          reviews: state.reviews.map((r) => (r.id === id ? { ...r, status: "rejected" } : r)),
-        })),
+  // ---------------- Returns ----------------
+  updateReturnStatus: async (id, status) => {
+    const updated = await api.updateReturnStatus(id, status);
+    set((state) => ({ returns: state.returns.map((r) => (r.id === id ? updated : r)) }));
+    get().refreshActivity();
+  },
 
-      deleteReview: (id) =>
-        set((state) => ({
-          reviews: state.reviews.filter((r) => r.id !== id),
-        })),
+  // ---------------- Staff ----------------
+  addStaff: async (staff) => {
+    const created = await api.addStaff(staff);
+    set((state) => ({ staff: [...state.staff, created] }));
+    get().refreshActivity();
+  },
 
-      // ---------------- Returns ----------------
-      updateReturnStatus: (id, status) =>
-        set((state) => ({
-          returns: state.returns.map((r) => (r.id === id ? { ...r, status } : r)),
-          activityLog: [logEntry("Return Updated", `#${id} → ${status}`), ...state.activityLog].slice(0, 100),
-        })),
+  toggleStaff: async (id) => {
+    const updated = await api.toggleStaff(id);
+    set((state) => ({ staff: state.staff.map((s) => (s.id === id ? updated : s)) }));
+  },
 
-      // ---------------- Staff ----------------
-      addStaff: (staff) =>
-        set((state) => ({
-          staff: [...state.staff, { ...staff, id: Date.now(), active: true }],
-          activityLog: [logEntry("Staff Added", staff.name), ...state.activityLog].slice(0, 100),
-        })),
+  deleteStaff: async (id) => {
+    await api.deleteStaff(id);
+    set((state) => ({ staff: state.staff.filter((s) => s.id !== id) }));
+  },
 
-      toggleStaff: (id) =>
-        set((state) => ({
-          staff: state.staff.map((s) => (s.id === id ? { ...s, active: !s.active } : s)),
-        })),
-
-      deleteStaff: (id) =>
-        set((state) => ({
-          staff: state.staff.filter((s) => s.id !== id),
-        })),
-
-      // ---------------- Settings ----------------
-      updateSettings: (updates) =>
-        set((state) => ({
-          settings: { ...state.settings, ...updates },
-          activityLog: [logEntry("Settings Updated", Object.keys(updates).join(", ")), ...state.activityLog].slice(0, 100),
-        })),
-
-      resetDemoData: () =>
-        set({
-          products: PRODUCTS,
-          orders: MOCK_ORDERS,
-          customers: MOCK_CUSTOMERS,
-          categories: BASE_CATEGORIES,
-          coupons: DEFAULT_COUPONS,
-          reviews: MOCK_REVIEWS,
-          returns: MOCK_RETURNS,
-          staff: MOCK_STAFF,
-          settings: DEFAULT_SETTINGS,
-          festiveCollections: FESTIVE_COLLECTIONS,
-          activityLog: [],
-        }),
-    }),
-    { name: "niryana-admin-demo" }
-  )
-);
-
-function slugify(name) {
-  return name
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)/g, "");
-}
+  // ---------------- Settings ----------------
+  updateSettings: async (updates) => {
+    const updated = await api.updateSettings(updates);
+    set({ settings: updated });
+    get().refreshActivity();
+  },
+}));

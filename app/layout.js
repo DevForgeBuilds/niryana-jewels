@@ -6,6 +6,7 @@ import CartDrawer from "@/components/CartDrawer";
 import ToastContainer from "@/components/ToastContainer";
 import WhatsAppButton from "@/components/WhatsAppButton";
 import AuthProvider from "@/components/AuthProvider";
+import AdminDataProvider from "@/components/AdminDataProvider";
 
 // Self-hosted, non-render-blocking fonts (replaces the old Google Fonts CSS @import
 // for a faster first paint and no extra network round-trip).
@@ -66,6 +67,7 @@ export default function RootLayout({ children }) {
     <html lang="en" className={`${inter.variable} ${playfair.variable}`}>
       <body className="bg-cream text-charcoal antialiased">
         <AuthProvider>
+          <AdminDataProvider />
           <Navbar />
           <main>{children}</main>
           <Footer />

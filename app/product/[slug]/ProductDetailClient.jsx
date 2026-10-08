@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { useParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { getProductBySlug, PRODUCTS } from "@/data/products";
 import { useCartStore } from "@/store/cartStore";
 import { useWishlistStore } from "@/store/wishlistStore";
 import { useCartDrawerStore } from "@/store/cartDrawerStore";
@@ -23,7 +22,9 @@ const LOW_STOCK_THRESHOLD = 8;
 
 export default function ProductDetailClient() {
   const { slug } = useParams();
-  const product = getProductBySlug(slug);
+  const PRODUCTS = useAdminStore((s) => s.products);
+  const productsLoading = useAdminStore((s) => s.loading);
+  const product = PRODUCTS.find((p) => p.slug === slug);
   const [activeImg, setActiveImg] = useState(0);
   const [size, setSize] = useState(RING_SIZES[2]);
   const [qty, setQty] = useState(1);
@@ -52,7 +53,11 @@ export default function ProductDetailClient() {
   }, [allReviews, product]);
 
   if (!product) {
-    return <div className="pt-40 text-center text-forest">Product not found.</div>;
+    return (
+      <div className="pt-40 text-center text-forest">
+        {productsLoading ? "Loading…" : "Product not found."}
+      </div>
+    );
   }
 
   function handleAddToCart() {

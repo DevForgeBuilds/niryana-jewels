@@ -1,4 +1,4 @@
-import { CATEGORIES } from "@/data/products";
+import { getAllCategoriesServer } from "@/lib/serverProducts";
 import ShopClient from "./ShopClient";
 
 const SITE_URL = "https://niryana-jewels-iota.vercel.app";
@@ -6,11 +6,15 @@ const SITE_URL = "https://niryana-jewels-iota.vercel.app";
 // ---------------------------------------------------------------------------
 // SEO: category-aware <title>/<meta description>, e.g.
 // "Buy Gold Rings Online | Niryana Jewels" when ?category=rings is applied.
+// Categories are fetched live from MySQL so admin-renamed/added categories get
+// correct SEO titles without a redeploy (falls back to the static seed list
+// only if the backend is unreachable).
 // ---------------------------------------------------------------------------
 export async function generateMetadata({ searchParams }) {
   const sp = await searchParams;
   const categorySlug = sp?.category;
-  const category = CATEGORIES.find((c) => c.slug === categorySlug);
+  const categories = await getAllCategoriesServer();
+  const category = categories.find((c) => c.slug === categorySlug);
 
   if (category) {
     const title = `Buy ${category.name} Online | Niryana Jewels`;

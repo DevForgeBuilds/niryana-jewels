@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAdminStore } from "@/store/adminStore";
+import { toast } from "@/store/toastStore";
 
 const EMPTY = {
   name: "",
@@ -38,7 +39,9 @@ export default function ProductForm({ initial, productId }) {
     setForm((f) => ({ ...f, images: [...f.images, ""] }));
   }
 
-  function handleSubmit(e) {
+  const [saving, setSaving] = useState(false);
+
+  async function handleSubmit(e) {
     e.preventDefault();
     const payload = {
       ...form,
@@ -46,12 +49,18 @@ export default function ProductForm({ initial, productId }) {
       stock_quantity: Number(form.stock_quantity),
       images: form.images.filter(Boolean),
     };
-    if (productId) {
-      updateProduct(productId, payload);
-    } else {
-      addProduct(payload);
+    setSaving(true);
+    try {
+      if (productId) {
+        await updateProduct(productId, payload);
+      } else {
+        await addProduct(payload);
+      }
+      router.push("/admin/products");
+    } catch (err) {
+      toast(`Failed to save product: ${err.message}`, "error");
+      setSaving(false);
     }
-    router.push("/admin/products");
   }
 
   return (
@@ -174,9 +183,10 @@ export default function ProductForm({ initial, productId }) {
       <div className="flex gap-3 pt-2">
         <button
           type="submit"
-          className="bg-forest text-cream px-6 py-2.5 rounded-full text-sm uppercase tracking-widest hover:bg-gold hover:text-forest transition-colors"
+          disabled={saving}
+          className="bg-forest text-cream px-6 py-2.5 rounded-full text-sm uppercase tracking-widest hover:bg-gold hover:text-forest transition-colors disabled:opacity-60"
         >
-          {productId ? "Save Changes" : "Add Product"}
+          {saving ? "Saving…" : productId ? "Save Changes" : "Add Product"}
         </button>
       </div>
     </form>

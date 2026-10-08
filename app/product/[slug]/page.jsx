@@ -1,4 +1,4 @@
-import { getProductBySlug } from "@/data/products";
+import { getProductBySlugServer } from "@/lib/serverProducts";
 import ProductDetailClient from "./ProductDetailClient";
 
 const SITE_URL = "https://niryana-jewels-iota.vercel.app";
@@ -8,7 +8,7 @@ const SITE_URL = "https://niryana-jewels-iota.vercel.app";
 // ---------------------------------------------------------------------------
 export async function generateMetadata({ params }) {
   const { slug } = await params;
-  const product = getProductBySlug(slug);
+  const product = await getProductBySlugServer(slug);
 
   if (!product) {
     return { title: "Product Not Found | Niryana Jewels" };
@@ -79,7 +79,7 @@ function ProductJsonLd({ product }) {
 
 export default async function ProductDetailPage({ params }) {
   const { slug } = await params;
-  const product = getProductBySlug(slug);
+  const product = await getProductBySlugServer(slug);
 
   return (
     <>

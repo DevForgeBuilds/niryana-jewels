@@ -4,13 +4,14 @@ import Image from "next/image";
 import Link from "next/link";
 import { useWishlistStore } from "@/store/wishlistStore";
 import { useCartStore } from "@/store/cartStore";
-import { getProductBySlug } from "@/data/products";
+import { useAdminStore } from "@/store/adminStore";
 import Reveal from "@/components/Reveal";
 import { toast } from "@/store/toastStore";
 
 export default function WishlistPage() {
   const { items, removeItem, restoreItem } = useWishlistStore();
   const addToCart = useCartStore((s) => s.addItem);
+  const allProducts = useAdminStore((s) => s.products);
 
   if (items.length === 0) {
     return (
@@ -38,7 +39,7 @@ export default function WishlistPage() {
   }
 
   function handleAddToCart(item) {
-    const fullProduct = getProductBySlug(item.slug);
+    const fullProduct = allProducts.find((p) => p.slug === item.slug);
     if (fullProduct) {
       addToCart(fullProduct, 1, null);
       toast(`Added "${item.name}" to cart`, "success");

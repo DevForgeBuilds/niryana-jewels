@@ -1,12 +1,13 @@
 "use client";
 
 import { useRecentlyViewedStore } from "@/store/recentlyViewedStore";
-import { PRODUCTS } from "@/data/products";
+import { useAdminStore } from "@/store/adminStore";
 import ProductCard from "./ProductCard";
 import Reveal from "./Reveal";
 
 export default function RecentlyViewed({ excludeId }) {
   const ids = useRecentlyViewedStore((s) => s.ids);
+  const PRODUCTS = useAdminStore((s) => s.products);
 
   const products = ids
     .filter((id) => id !== excludeId)

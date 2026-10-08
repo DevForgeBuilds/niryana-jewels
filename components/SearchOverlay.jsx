@@ -5,9 +5,10 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { PRODUCTS } from "@/data/products";
+import { useAdminStore } from "@/store/adminStore";
 
 export default function SearchOverlay({ isOpen, onClose }) {
+  const PRODUCTS = useAdminStore((s) => s.products);
   const [query, setQuery] = useState("");
   const inputRef = useRef(null);
   const router = useRouter();
@@ -38,7 +39,7 @@ export default function SearchOverlay({ isOpen, onClose }) {
         p.metal?.toLowerCase().includes(q) ||
         p.stone?.toLowerCase().includes(q)
     ).slice(0, 6);
-  }, [query]);
+  }, [query, PRODUCTS]);
 
   function goToResults() {
     if (!query.trim()) return;

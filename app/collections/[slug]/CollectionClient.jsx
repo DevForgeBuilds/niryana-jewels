@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useAdminStore } from "@/store/adminStore";
 import ProductCard from "@/components/ProductCard";
@@ -22,17 +21,13 @@ const ACCENTS = {
 };
 
 export default function CollectionClient({ slug }) {
-  const [hydrated, setHydrated] = useState(false);
   const collections = useAdminStore((s) => s.festiveCollections);
   const allProducts = useAdminStore((s) => s.products);
-
-  // Zustand's persist middleware hydrates from localStorage asynchronously, so we
-  // wait one tick before trusting "not found" — avoids a false 404 flash on load.
-  useEffect(() => setHydrated(true), []);
+  const loading = useAdminStore((s) => s.loading);
 
   const collection = collections.find((c) => c.slug === slug);
 
-  if (!hydrated) {
+  if (loading) {
     return <div className="pt-40 pb-40 text-center text-charcoal/50">Loading…</div>;
   }
 

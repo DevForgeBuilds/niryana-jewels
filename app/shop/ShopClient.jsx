@@ -2,34 +2,36 @@
 
 import { Suspense, useMemo, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { PRODUCTS, CATEGORIES } from "@/data/products";
+import { useAdminStore } from "@/store/adminStore";
 import ProductCard from "@/components/ProductCard";
 import Reveal from "@/components/Reveal";
-
-const PRICE_MIN = 0;
-const PRICE_MAX = Math.ceil(Math.max(...PRODUCTS.map((p) => p.price)) / 5000) * 5000;
 
 function ShopContent() {
   const params = useSearchParams();
   const router = useRouter();
+  const PRODUCTS = useAdminStore((s) => s.products);
+  const CATEGORIES = useAdminStore((s) => s.categories);
+  const loading = useAdminStore((s) => s.loading);
   const initialCategory = params.get("category") || "all";
   const searchQuery = params.get("search") || "";
   const [category, setCategory] = useState(initialCategory);
   const [metal, setMetal] = useState("all");
   const [sort, setSort] = useState("featured");
+
+  const PRICE_MIN = 0;
+  const PRICE_MAX = useMemo(
+    () => (PRODUCTS.length ? Math.ceil(Math.max(...PRODUCTS.map((p) => p.price)) / 5000) * 5000 : 50000),
+    [PRODUCTS]
+  );
   const [priceRange, setPriceRange] = useState([PRICE_MIN, PRICE_MAX]);
 
-  const metals = useMemo(
-    () => ["all", ...new Set(PRODUCTS.map((p) => p.metal))],
-    []
-  );
+  const metals = useMemo(() => ["all", ...new Set(PRODUCTS.map((p) => p.metal))], [PRODUCTS]);
 
   const filtered = useMemo(() => {
-    let list = PRODUCTS.filter(
-      (p) => category === "all" || p.category === category
-    );
+    let list = PRODUCTS.filter((p) => category === "all" || p.category === category);
     if (metal !== "all") list = list.filter((p) => p.metal === metal);
-    list = list.filter((p) => p.price >= priceRange[0] && p.price <= priceRange[1]);
+    const [lo, hi] = priceRange[1] > 0 ? priceRange : [PRICE_MIN, PRICE_MAX];
+    list = list.filter((p) => p.price >= lo && p.price <= hi);
     if (searchQuery.trim()) {
       const q = searchQuery.trim().toLowerCase();
       list = list.filter(
@@ -43,7 +45,7 @@ function ShopContent() {
     if (sort === "price-asc") list = [...list].sort((a, b) => a.price - b.price);
     if (sort === "price-desc") list = [...list].sort((a, b) => b.price - a.price);
     return list;
-  }, [category, metal, sort, priceRange, searchQuery]);
+  }, [PRODUCTS, category, metal, sort, priceRange, searchQuery, PRICE_MAX]);
 
   function handleMinChange(e) {
     const value = Math.min(Number(e.target.value), priceRange[1] - 500);
@@ -158,7 +160,9 @@ function ShopContent() {
         </div>
       </div>
 
-      {filtered.length === 0 ? (
+      {loading ? (
+        <p className="text-center text-charcoal/60">Loading products…</p>
+      ) : filtered.length === 0 ? (
         <p className="text-center text-charcoal/60">No products in this filter yet.</p>
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">

@@ -1,10 +1,15 @@
-import { PRODUCTS, CATEGORIES, FESTIVE_COLLECTIONS } from "@/data/products";
+import { getAllProductsServer, getAllCategoriesServer, getAllCollectionsServer } from "@/lib/serverProducts";
 
 const SITE_URL = "https://niryana-jewels-iota.vercel.app";
 
 // Next.js App Router convention: this file auto-generates /sitemap.xml
-export default function sitemap() {
+export default async function sitemap() {
   const now = new Date();
+  const [PRODUCTS, CATEGORIES, FESTIVE_COLLECTIONS] = await Promise.all([
+    getAllProductsServer(),
+    getAllCategoriesServer(),
+    getAllCollectionsServer(),
+  ]);
 
   const staticRoutes = [
     { url: `${SITE_URL}/`, changeFrequency: "weekly", priority: 1.0 },

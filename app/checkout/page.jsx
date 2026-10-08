@@ -175,10 +175,8 @@ export default function CheckoutPage() {
           });
           const verifyData = await verifyRes.json();
           if (verifyData.verified) {
-            // TODO: create the order + order_items rows in MySQL here, then
-            // send confirmation email/WhatsApp with the invoice.
             if (appliedCoupon) incrementCouponUsage(appliedCoupon.id);
-            completeOrder();
+            await completeOrder();
           } else {
             setPayError("Payment verification failed. Please contact support before retrying.");
           }
@@ -200,8 +198,40 @@ export default function CheckoutPage() {
     rzp.open();
   }
 
-  function completeOrder() {
+  async function completeOrder() {
     const orderNumber = `NJ${Date.now().toString().slice(-8)}`;
+
+    // Write the order straight into MySQL (via the Admin store's addOrder, which
+    // calls the backend API) so it shows up under Admin → Orders immediately —
+    // on any device/browser, no manual sync needed.
+    try {
+      await addOrder({
+        orderNumber,
+        customerName: form.name,
+        phone: form.phone,
+        email: form.email,
+        address: `${form.address}, ${form.city} - ${form.pincode}`,
+        items: items.map((i) => ({
+          productId: i.productId,
+          name: i.name,
+          quantity: i.quantity,
+          price: i.price,
+          size: i.size || null,
+        })),
+        subtotal: sub,
+        discount,
+        couponCode: appliedCoupon?.code || null,
+        gst,
+        codFee,
+        total,
+        paymentMethod,
+        giftWrap,
+        giftNote,
+      });
+    } catch (err) {
+      console.error("Failed to save order to the backend:", err);
+      setPayError("Order placed, but we couldn't reach the server to save it. Please contact support with your details.");
+    }
 
     setLastOrder({
       orderNumber,
@@ -219,34 +249,6 @@ export default function CheckoutPage() {
       placedAt: new Date().toISOString(),
     });
 
-    // Push this order straight into the Admin Dashboard's shared store so it
-    // shows up under Admin → Orders immediately (same browser), along with
-    // stock deduction and a customer record — no manual sync needed.
-    addOrder({
-      orderNumber,
-      customerName: form.name,
-      phone: form.phone,
-      email: form.email,
-      address: `${form.address}, ${form.city} - ${form.pincode}`,
-      items: items.map((i) => ({
-        productId: i.productId,
-        name: i.name,
-        quantity: i.quantity,
-        price: i.price,
-        size: i.size || null,
-      })),
-      subtotal: sub,
-      discount,
-      couponCode: appliedCoupon?.code || null,
-      gst,
-      codFee,
-      total,
-      paymentMethod,
-      giftWrap,
-      giftNote,
-      createdAt: new Date().toISOString().slice(0, 10),
-    });
-
     clearCart();
     router.push("/order-confirmation");
   }
@@ -260,7 +262,7 @@ export default function CheckoutPage() {
     // 3. Send order confirmation email/WhatsApp with COD amount due.
     // ---------------------------------------------------------------
     if (appliedCoupon) incrementCouponUsage(appliedCoupon.id);
-    completeOrder();
+    await completeOrder();
   }
 
   async function handleSubmit(e) {
