@@ -188,6 +188,37 @@ CREATE TABLE IF NOT EXISTS activity_log (
   INDEX idx_activity_timestamp (timestamp)
 ) ENGINE=InnoDB;
 
+-- -------------------------------------------------------------------------------------
+-- ABANDONED CHECKOUTS  (one row per email — snapshot of their cart at checkout time,
+-- used to send a reminder email if they never complete the order)
+-- -------------------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS abandoned_checkouts (
+  id          BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  email       VARCHAR(190)   NOT NULL UNIQUE,
+  name        VARCHAR(150),
+  phone       VARCHAR(20),
+  items       JSON           NOT NULL,
+  subtotal    DECIMAL(10,2)  NOT NULL DEFAULT 0,
+  created_at  TIMESTAMP      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at  TIMESTAMP      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  reminded_at TIMESTAMP      NULL DEFAULT NULL,
+  converted   BOOLEAN        NOT NULL DEFAULT FALSE,
+  INDEX idx_abandoned_pending (converted, reminded_at, updated_at)
+) ENGINE=InnoDB;
+
+-- -------------------------------------------------------------------------------------
+-- STOCK NOTIFICATIONS  ("Notify me when back in stock" subscriptions)
+-- -------------------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS stock_notifications (
+  id          BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  product_id  BIGINT UNSIGNED NOT NULL,
+  email       VARCHAR(190)    NOT NULL,
+  created_at  TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  notified_at TIMESTAMP       NULL DEFAULT NULL,
+  UNIQUE KEY uq_stock_notif_product_email (product_id, email),
+  CONSTRAINT fk_stock_notif_product FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
 -- =====================================================================================
 -- END OF SCHEMA
 -- =====================================================================================

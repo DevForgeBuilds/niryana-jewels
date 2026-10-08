@@ -67,6 +67,11 @@ export default function ProductCard({ product }) {
           Only {product.stock_quantity} left
         </span>
       )}
+      {typeof product.stock_quantity === "number" && product.stock_quantity <= 0 && (
+        <span className="absolute top-3 left-3 bg-charcoal/80 text-white text-[10px] font-medium uppercase tracking-wide px-2.5 py-1 rounded-full z-10">
+          Out of Stock
+        </span>
+      )}
 
       <motion.button
         onClick={(e) => {
@@ -125,40 +130,49 @@ export default function ProductCard({ product }) {
         )}
         <div className="flex items-center justify-between mt-3">
           <span className="text-forest font-medium">₹{product.price.toLocaleString("en-IN")}</span>
-          <motion.button
-            onClick={handleAdd}
-            whileTap={{ scale: 0.9 }}
-            animate={added ? { scale: [1, 1.08, 1] } : { scale: 1 }}
-            transition={{ duration: 0.35 }}
-            className={`relative overflow-hidden text-xs uppercase tracking-widest px-4 py-2 rounded-full transition-colors duration-300 ${
-              added ? "bg-gold text-forest" : "bg-forest text-cream hover:bg-gold hover:text-forest"
-            }`}
-          >
-            <AnimatePresence mode="wait" initial={false}>
-              {added ? (
-                <motion.span
-                  key="added"
-                  initial={{ y: 8, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  exit={{ y: -8, opacity: 0 }}
-                  transition={{ duration: 0.2 }}
-                  className="flex items-center gap-1"
-                >
-                  ✓ Added
-                </motion.span>
-              ) : (
-                <motion.span
-                  key="add"
-                  initial={{ y: 8, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  exit={{ y: -8, opacity: 0 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  Add
-                </motion.span>
-              )}
-            </AnimatePresence>
-          </motion.button>
+          {typeof product.stock_quantity === "number" && product.stock_quantity <= 0 ? (
+            <Link
+              href={`/product/${product.slug}`}
+              className="text-xs uppercase tracking-widest px-4 py-2 rounded-full border border-forest/20 text-forest/60 hover:border-gold hover:text-forest transition-colors duration-300"
+            >
+              Notify Me
+            </Link>
+          ) : (
+            <motion.button
+              onClick={handleAdd}
+              whileTap={{ scale: 0.9 }}
+              animate={added ? { scale: [1, 1.08, 1] } : { scale: 1 }}
+              transition={{ duration: 0.35 }}
+              className={`relative overflow-hidden text-xs uppercase tracking-widest px-4 py-2 rounded-full transition-colors duration-300 ${
+                added ? "bg-gold text-forest" : "bg-forest text-cream hover:bg-gold hover:text-forest"
+              }`}
+            >
+              <AnimatePresence mode="wait" initial={false}>
+                {added ? (
+                  <motion.span
+                    key="added"
+                    initial={{ y: 8, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    exit={{ y: -8, opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="flex items-center gap-1"
+                  >
+                    ✓ Added
+                  </motion.span>
+                ) : (
+                  <motion.span
+                    key="add"
+                    initial={{ y: 8, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    exit={{ y: -8, opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    Add
+                  </motion.span>
+                )}
+              </AnimatePresence>
+            </motion.button>
+          )}
         </div>
       </div>
     </div>

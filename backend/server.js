@@ -3,6 +3,7 @@ const express = require("express");
 const cors = require("cors");
 const crypto = require("crypto");
 const Razorpay = require("razorpay");
+const { ensureSchema } = require("./db");
 
 const productsRouter = require("./routes/products");
 const categoriesRouter = require("./routes/categories");
@@ -15,6 +16,8 @@ const returnsRouter = require("./routes/returns");
 const staffRouter = require("./routes/staff");
 const settingsRouter = require("./routes/settings");
 const activityRouter = require("./routes/activity");
+const abandonedCartRouter = require("./routes/abandonedCart");
+const stockNotifyRouter = require("./routes/stockNotify");
 
 const app = express();
 app.use(express.json({ limit: "5mb" }));
@@ -68,6 +71,28 @@ app.use("/api/returns", returnsRouter);
 app.use("/api/staff", staffRouter);
 app.use("/api/settings", settingsRouter);
 app.use("/api/activity", activityRouter);
+app.use("/api/abandoned-checkout", abandonedCartRouter);
+app.use("/api/notify-stock", stockNotifyRouter);
+
+// ---------------------------------------------------------------------------
+// POST /api/cron/send-abandoned-cart-reminders
+// Protected by a shared secret header (not a real user-facing endpoint) so it can
+// only be triggered by our own scheduled job (see .github/workflows — this backend
+// has no built-in cron, so a GitHub Actions workflow pings this on a schedule).
+// ---------------------------------------------------------------------------
+app.post("/api/cron/send-abandoned-cart-reminders", async (req, res) => {
+  const secret = req.headers["x-cron-secret"];
+  if (!process.env.CRON_SECRET || secret !== process.env.CRON_SECRET) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+  try {
+    const sent = await abandonedCartRouter.sendDueReminders();
+    res.json({ ok: true, sent });
+  } catch (err) {
+    console.error("Abandoned-cart reminder sweep failed:", err);
+    res.status(500).json({ error: "Failed to send reminders" });
+  }
+});
 
 // POST /api/razorpay/create-order
 // body: { amount: number (in rupees), receipt?: string }
@@ -134,7 +159,9 @@ app.post("/api/razorpay/verify", (req, res) => {
   res.status(400).json({ verified: false, error: "Signature mismatch" });
 });
 
-app.listen(PORT, () => {
-  console.log(`Niryana Jewels backend listening on port ${PORT}`);
-  console.log(`Allowed frontend origins: ${allowedOrigins.join(", ")}`);
+ensureSchema().finally(() => {
+  app.listen(PORT, () => {
+    console.log(`Niryana Jewels backend listening on port ${PORT}`);
+    console.log(`Allowed frontend origins: ${allowedOrigins.join(", ")}`);
+  });
 });

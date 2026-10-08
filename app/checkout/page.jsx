@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -82,6 +82,43 @@ export default function CheckoutPage() {
   const [applyingCoupon, setApplyingCoupon] = useState(false);
   const [giftWrap, setGiftWrap] = useState(false);
   const [giftNote, setGiftNote] = useState("");
+
+  // -----------------------------------------------------------------------
+  // Abandoned-cart recovery: once the shopper has typed a valid email, quietly
+  // save a snapshot of their cart to the backend (debounced) so we can email a
+  // reminder if they never finish checking out. This never blocks/alerts the
+  // UI — it's a best-effort background save.
+  // -----------------------------------------------------------------------
+  const abandonedSaveTimer = useRef(null);
+  useEffect(() => {
+    const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim());
+    if (!emailValid || items.length === 0) return;
+
+    if (abandonedSaveTimer.current) clearTimeout(abandonedSaveTimer.current);
+    abandonedSaveTimer.current = setTimeout(() => {
+      api
+        .saveAbandonedCheckout({
+          email: form.email.trim(),
+          name: form.name.trim(),
+          phone: form.phone.trim(),
+          items: items.map((i) => ({
+            productId: i.productId,
+            name: i.name,
+            quantity: i.quantity,
+            price: i.price,
+            image: i.image,
+          })),
+          subtotal: subtotal(),
+        })
+        .catch(() => {
+          // Silent — this is a background convenience save, never worth
+          // interrupting checkout over.
+        });
+    }, 1500);
+
+    return () => clearTimeout(abandonedSaveTimer.current);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.email, form.name, form.phone, items]);
 
   const sub = subtotal();
   const discount = appliedCoupon
@@ -264,6 +301,10 @@ export default function CheckoutPage() {
       total,
       placedAt: new Date().toISOString(),
     });
+
+    // Stop this shopper from getting an "you left something in your cart" email —
+    // they just completed the order. Best-effort: never block navigation on this.
+    api.markCheckoutConverted(form.email.trim()).catch(() => {});
 
     clearCart();
     router.push("/order-confirmation");

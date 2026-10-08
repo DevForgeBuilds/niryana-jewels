@@ -16,6 +16,7 @@ import { StarRatingDisplay } from "@/components/StarRating";
 import SizeGuideModal from "@/components/SizeGuideModal";
 import Reveal from "@/components/Reveal";
 import { toast } from "@/store/toastStore";
+import { api } from "@/lib/api";
 
 const RING_SIZES = ["12", "13", "14", "15", "16", "17", "18"];
 const LOW_STOCK_THRESHOLD = 8;
@@ -30,6 +31,8 @@ export default function ProductDetailClient() {
   const [qty, setQty] = useState(1);
   const [added, setAdded] = useState(false);
   const [showSizeGuide, setShowSizeGuide] = useState(false);
+  const [notifyEmail, setNotifyEmail] = useState("");
+  const [notifyStatus, setNotifyStatus] = useState("idle"); // idle | sending | sent | error
   const addItem = useCartStore((s) => s.addItem);
   const isFavorite = useWishlistStore((s) => (product ? s.isFavorite(product.id) : false));
   const toggleWishlist = useWishlistStore((s) => s.toggleItem);
@@ -68,6 +71,22 @@ export default function ProductDetailClient() {
       action: { label: "View Cart", onClick: () => openCartDrawer() },
     });
     setTimeout(() => setAdded(false), 1400);
+  }
+
+  async function handleNotifyMe(e) {
+    e.preventDefault();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(notifyEmail.trim())) {
+      setNotifyStatus("error");
+      return;
+    }
+    setNotifyStatus("sending");
+    try {
+      await api.notifyStock(product.id, notifyEmail.trim());
+      setNotifyStatus("sent");
+      toast("We'll email you when it's back in stock", "success");
+    } catch {
+      setNotifyStatus("error");
+    }
   }
 
   const related = PRODUCTS.filter(
@@ -245,46 +264,87 @@ export default function ProductDetailClient() {
           )}
 
           <div className="flex items-center gap-4 mb-2">
-            <div className="flex items-center border border-forest/20 rounded-full">
-              <button onClick={() => setQty((q) => Math.max(1, q - 1))} className="px-4 py-2 text-forest">−</button>
-              <span className="px-4">{qty}</span>
-              <button onClick={() => setQty((q) => q + 1)} className="px-4 py-2 text-forest">+</button>
-            </div>
-            <motion.button
-              onClick={handleAddToCart}
-              whileTap={{ scale: 0.96 }}
-              animate={added ? { scale: [1, 1.04, 1] } : { scale: 1 }}
-              transition={{ duration: 0.35 }}
-              className={`relative overflow-hidden flex-1 py-3 rounded-full text-sm uppercase tracking-widest transition-colors duration-300 ${
-                added ? "bg-gold text-forest" : "bg-forest text-cream hover:bg-gold hover:text-forest"
-              }`}
-            >
-              <AnimatePresence mode="wait" initial={false}>
-                {added ? (
-                  <motion.span
-                    key="added"
-                    initial={{ y: 10, opacity: 0 }}
-                    animate={{ y: 0, opacity: 1 }}
-                    exit={{ y: -10, opacity: 0 }}
-                    transition={{ duration: 0.2 }}
-                    className="inline-block"
-                  >
-                    ✓ Added to Cart
-                  </motion.span>
+            {typeof product.stock_quantity === "number" && product.stock_quantity <= 0 ? (
+              <form onSubmit={handleNotifyMe} className="flex-1 flex flex-col sm:flex-row gap-2">
+                {notifyStatus === "sent" ? (
+                  <p className="flex-1 flex items-center gap-2 text-sm text-forest bg-cream-soft rounded-full px-5 py-3">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1B3A2F" strokeWidth="2">
+                      <path d="M20 7l-9 9-5-5" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                    We&apos;ll email you when it&apos;s back in stock
+                  </p>
                 ) : (
-                  <motion.span
-                    key="add"
-                    initial={{ y: 10, opacity: 0 }}
-                    animate={{ y: 0, opacity: 1 }}
-                    exit={{ y: -10, opacity: 0 }}
-                    transition={{ duration: 0.2 }}
-                    className="inline-block"
-                  >
-                    Add to Cart
-                  </motion.span>
+                  <>
+                    <input
+                      type="email"
+                      required
+                      value={notifyEmail}
+                      onChange={(e) => {
+                        setNotifyEmail(e.target.value);
+                        if (notifyStatus === "error") setNotifyStatus("idle");
+                      }}
+                      placeholder="Your email address"
+                      aria-label="Email address for back-in-stock notification"
+                      className={`flex-1 min-w-0 border rounded-full px-5 py-3 text-sm text-forest placeholder:text-charcoal/30 focus:outline-none focus:ring-2 transition-shadow duration-200 ${
+                        notifyStatus === "error"
+                          ? "border-red-400 focus:ring-red-200 focus:border-red-400"
+                          : "border-forest/20 focus:ring-gold/50 focus:border-gold"
+                      }`}
+                    />
+                    <button
+                      type="submit"
+                      disabled={notifyStatus === "sending"}
+                      className="py-3 px-6 rounded-full text-sm uppercase tracking-widest bg-forest text-cream hover:bg-gold hover:text-forest transition-colors duration-300 disabled:opacity-60"
+                    >
+                      {notifyStatus === "sending" ? "Saving…" : "Notify Me"}
+                    </button>
+                  </>
                 )}
-              </AnimatePresence>
-            </motion.button>
+              </form>
+            ) : (
+              <>
+                <div className="flex items-center border border-forest/20 rounded-full">
+                  <button onClick={() => setQty((q) => Math.max(1, q - 1))} className="px-4 py-2 text-forest">−</button>
+                  <span className="px-4">{qty}</span>
+                  <button onClick={() => setQty((q) => q + 1)} className="px-4 py-2 text-forest">+</button>
+                </div>
+                <motion.button
+                  onClick={handleAddToCart}
+                  whileTap={{ scale: 0.96 }}
+                  animate={added ? { scale: [1, 1.04, 1] } : { scale: 1 }}
+                  transition={{ duration: 0.35 }}
+                  className={`relative overflow-hidden flex-1 py-3 rounded-full text-sm uppercase tracking-widest transition-colors duration-300 ${
+                    added ? "bg-gold text-forest" : "bg-forest text-cream hover:bg-gold hover:text-forest"
+                  }`}
+                >
+                  <AnimatePresence mode="wait" initial={false}>
+                    {added ? (
+                      <motion.span
+                        key="added"
+                        initial={{ y: 10, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        exit={{ y: -10, opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className="inline-block"
+                      >
+                        ✓ Added to Cart
+                      </motion.span>
+                    ) : (
+                      <motion.span
+                        key="add"
+                        initial={{ y: 10, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        exit={{ y: -10, opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className="inline-block"
+                      >
+                        Add to Cart
+                      </motion.span>
+                    )}
+                  </AnimatePresence>
+                </motion.button>
+              </>
+            )}
             <motion.button
               onClick={() => toggleWishlist(product)}
               whileTap={{ scale: 0.85 }}
