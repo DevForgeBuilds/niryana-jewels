@@ -13,6 +13,7 @@ import SearchOverlay from "./SearchOverlay";
 
 const LINKS = [
   { href: "/shop", label: "Shop" },
+  { href: "/collections", label: "Collections" },
   { href: "/shop?category=devotional", label: "Devotional" },
   { href: "/about", label: "About" },
   { href: "/contact", label: "Contact" },

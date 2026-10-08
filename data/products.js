@@ -23,6 +23,7 @@ export const PRODUCTS = [
     slug: "9kt-gold-heart-ring",
     name: "9KT Gold Heart Ring",
     category: "rings",
+    occasions: ["diwali", "wedding"],
     price: 18500,
     metal: "9KT Gold",
     stone: "Heart-cut Pink Sapphire, CZ halo",
@@ -38,6 +39,7 @@ export const PRODUCTS = [
     slug: "ruby-dream-ring",
     name: "Ruby Dreams Ring",
     category: "rings",
+    occasions: ["wedding"],
     price: 24999,
     metal: "Gold Vermeil",
     stone: "Ruby, White CZ",
@@ -52,6 +54,7 @@ export const PRODUCTS = [
     slug: "symphony-gold-band",
     name: "Symphony Gold Band",
     category: "rings",
+    occasions: ["diwali", "wedding"],
     price: 15999,
     metal: "Gold Tone Brass",
     stone: "—",
@@ -66,6 +69,7 @@ export const PRODUCTS = [
     slug: "peacock-drop-earrings",
     name: "Rose Bloom Stud Earrings",
     category: "earrings",
+    occasions: ["wedding"],
     price: 6999,
     metal: "925 Sterling Silver",
     stone: "Pink CZ",
@@ -80,6 +84,7 @@ export const PRODUCTS = [
     slug: "shree-ram-pendant",
     name: "Shree Ram Devotional Pendant",
     category: "devotional",
+    occasions: ["diwali", "rakhi"],
     price: 4999,
     metal: "925 Sterling Silver",
     stone: "—",
@@ -95,6 +100,7 @@ export const PRODUCTS = [
     slug: "mahadev-protection-pendant",
     name: "Mahadev Protection Pendant",
     category: "devotional",
+    occasions: ["diwali", "rakhi"],
     price: 5499,
     metal: "925 Sterling Silver",
     stone: "—",
@@ -109,6 +115,7 @@ export const PRODUCTS = [
     slug: "dainty-heart-pendant",
     name: "Dainty Heart Pendant",
     category: "pendants",
+    occasions: ["rakhi"],
     price: 3999,
     metal: "925 Sterling Silver",
     stone: "White CZ",
@@ -123,6 +130,7 @@ export const PRODUCTS = [
     slug: "diamond-drape-necklace",
     name: "Diamond Drape Necklace",
     category: "necklaces",
+    occasions: ["wedding", "diwali"],
     price: 45999,
     metal: "Rhodium Plated Silver",
     stone: "White CZ Pavé",
@@ -137,6 +145,7 @@ export const PRODUCTS = [
     slug: "legacy-layered-necklace",
     name: "Legacy Layered Necklace Set",
     category: "necklaces",
+    occasions: ["wedding", "diwali"],
     price: 38999,
     metal: "Gold Vermeil",
     stone: "Mixed CZ",
@@ -151,6 +160,7 @@ export const PRODUCTS = [
     slug: "dual-tone-cuff-bracelet",
     name: "Dual Tone Cuff Bracelet",
     category: "bracelets",
+    occasions: ["rakhi"],
     price: 8999,
     metal: "Two-tone Gold & Silver",
     stone: "—",
@@ -165,6 +175,7 @@ export const PRODUCTS = [
     slug: "raksha-bandhan-rakhi-bracelet",
     name: "Raksha Bandhan Rakhi Bracelet",
     category: "bracelets",
+    occasions: ["rakhi"],
     price: 2499,
     metal: "925 Sterling Silver",
     stone: "—",
@@ -179,6 +190,7 @@ export const PRODUCTS = [
     slug: "hare-krishna-silver-pendant",
     name: "Hare Krishna Silver Pendant",
     category: "devotional",
+    occasions: ["diwali", "rakhi"],
     price: 3499,
     metal: "925 Sterling Silver",
     stone: "—",
@@ -188,6 +200,48 @@ export const PRODUCTS = [
     video: ASSETS.hareKrishnaSilverReel,
   },
 ];
+
+// ---- Festive / occasion collections --------------------------------------------------
+export const FESTIVE_COLLECTIONS = [
+  {
+    slug: "diwali",
+    name: "Diwali Collection",
+    tagline: "Light up the festivities",
+    description:
+      "Celebrate the festival of lights with warm gold tones and devotional pieces — perfect for pujas, gifting and festive dressing.",
+    heroImage: ASSETS.shreeRamPendant,
+    heroVideo: ASSETS.mahadevProtectionReel,
+    accent: "gold",
+  },
+  {
+    slug: "rakhi",
+    name: "Raksha Bandhan Collection",
+    tagline: "Tie more than a thread",
+    description:
+      "Thoughtful bracelets and pendants to celebrate the bond between siblings this Raksha Bandhan — love, blessings and protection in every piece.",
+    heroImage: ASSETS.braceletEmeraldSatin,
+    heroVideo: ASSETS.rakshaBandhanReel,
+    accent: "rose",
+  },
+  {
+    slug: "wedding",
+    name: "Wedding Collection",
+    tagline: "Timeless pieces for your big day",
+    description:
+      "From statement necklaces to delicate rings — handcrafted pieces designed to shine through every wedding ritual and celebration.",
+    heroImage: ASSETS.fullLookNecklace,
+    heroVideo: ASSETS.weekendRingsReel,
+    accent: "forest",
+  },
+];
+
+export function getFestiveCollection(slug) {
+  return FESTIVE_COLLECTIONS.find((c) => c.slug === slug);
+}
+
+export function getProductsByOccasion(slug) {
+  return PRODUCTS.filter((p) => Array.isArray(p.occasions) && p.occasions.includes(slug));
+}
 
 export function getProductsByCategory(slug) {
   return PRODUCTS.filter((p) => p.category === slug);

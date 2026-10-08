@@ -1,4 +1,4 @@
-import { PRODUCTS, CATEGORIES } from "@/data/products";
+import { PRODUCTS, CATEGORIES, FESTIVE_COLLECTIONS } from "@/data/products";
 
 const SITE_URL = "https://niryana-jewels-iota.vercel.app";
 
@@ -9,6 +9,7 @@ export default function sitemap() {
   const staticRoutes = [
     { url: `${SITE_URL}/`, changeFrequency: "weekly", priority: 1.0 },
     { url: `${SITE_URL}/shop`, changeFrequency: "daily", priority: 0.9 },
+    { url: `${SITE_URL}/collections`, changeFrequency: "weekly", priority: 0.8 },
     { url: `${SITE_URL}/about`, changeFrequency: "monthly", priority: 0.6 },
     { url: `${SITE_URL}/contact`, changeFrequency: "monthly", priority: 0.6 },
     { url: `${SITE_URL}/faq`, changeFrequency: "monthly", priority: 0.5 },
@@ -31,5 +32,12 @@ export default function sitemap() {
     priority: 0.8,
   }));
 
-  return [...staticRoutes, ...categoryRoutes, ...productRoutes];
+  const festiveRoutes = FESTIVE_COLLECTIONS.map((c) => ({
+    url: `${SITE_URL}/collections/${c.slug}`,
+    lastModified: now,
+    changeFrequency: "weekly",
+    priority: 0.7,
+  }));
+
+  return [...staticRoutes, ...categoryRoutes, ...productRoutes, ...festiveRoutes];
 }
