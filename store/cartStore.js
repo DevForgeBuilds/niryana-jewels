@@ -10,10 +10,7 @@ export const useCartStore = create(
     (set, get) => ({
       items: [], // { productId, slug, name, price, image, quantity, size }
 
-      // `meta` carries any extra per-line-item fields that don't apply to normal
-      // products — currently used for digital Gift Card lines (type, recipient
-      // name/email, personal message) so checkout can issue the right codes.
-      addItem: (product, quantity = 1, size = null, meta = {}) =>
+      addItem: (product, quantity = 1, size = null) =>
         set((state) => {
           const existing = state.items.find(
             (i) => i.productId === product.id && i.size === size
@@ -38,7 +35,6 @@ export const useCartStore = create(
                 image: product.images[0],
                 quantity,
                 size,
-                ...meta,
               },
             ],
           };

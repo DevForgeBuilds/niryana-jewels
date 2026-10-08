@@ -19,31 +19,8 @@ const DEFAULT_SETTINGS = {
   codEnabled: true,
 };
 
-const DEFAULT_GIFT_CARDS = [
-  {
-    code: "NJGC-WELCOME25",
-    initialAmount: 2500,
-    balance: 2500,
-    buyerName: "Niryana Jewels",
-    buyerEmail: "niryanajewels@gmail.com",
-    recipientName: "Demo Recipient",
-    recipientEmail: "demo@example.com",
-    message: "Sample gift card — demo data.",
-    status: "active",
-    issuedAt: "2026-09-01",
-    orderNumber: null,
-  },
-];
-
 function logEntry(action, detail) {
   return { id: Date.now() + Math.random(), action, detail, timestamp: new Date().toISOString() };
-}
-
-function generateGiftCardCode() {
-  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-  let suffix = "";
-  for (let i = 0; i < 8; i++) suffix += chars[Math.floor(Math.random() * chars.length)];
-  return `NJGC-${suffix}`;
 }
 
 // ---------------------------------------------------------------------------------
@@ -64,7 +41,6 @@ export const useAdminStore = create(
       staff: MOCK_STAFF,
       settings: DEFAULT_SETTINGS,
       festiveCollections: FESTIVE_COLLECTIONS,
-      giftCards: DEFAULT_GIFT_CARDS,
       activityLog: [],
 
       pushLog: (action, detail) =>
@@ -265,70 +241,6 @@ export const useAdminStore = create(
           }),
         })),
 
-      // ---------------- Gift Cards ----------------
-      // Issued automatically when a customer buys a Gift Card at checkout, or
-      // manually by an admin. Redeemed as a payment method on a later order.
-      // Returns the generated code so the checkout flow can show it on the
-      // order confirmation page right away.
-      issueGiftCard: ({ amount, buyerName, buyerEmail, recipientName, recipientEmail, message, orderNumber }) => {
-        let code = generateGiftCardCode();
-        while (get().giftCards.some((g) => g.code === code)) code = generateGiftCardCode();
-        const card = {
-          code,
-          initialAmount: amount,
-          balance: amount,
-          buyerName: buyerName || "",
-          buyerEmail: buyerEmail || "",
-          recipientName: recipientName || "",
-          recipientEmail: recipientEmail || "",
-          message: message || "",
-          status: "active",
-          issuedAt: new Date().toISOString().slice(0, 10),
-          orderNumber: orderNumber || null,
-        };
-        set((state) => ({
-          giftCards: [card, ...state.giftCards],
-          activityLog: [
-            logEntry("Gift Card Issued", `${code} — ₹${amount.toLocaleString("en-IN")}`),
-            ...state.activityLog,
-          ].slice(0, 100),
-        }));
-        return code;
-      },
-
-      findActiveGiftCard: (code) =>
-        get().giftCards.find(
-          (g) => g.code.toLowerCase() === String(code || "").trim().toLowerCase() && g.status === "active" && g.balance > 0
-        ),
-
-      redeemGiftCardAmount: (code, amount) =>
-        set((state) => {
-          const card = state.giftCards.find((g) => g.code.toLowerCase() === String(code || "").toLowerCase());
-          if (!card || card.status !== "active" || card.balance <= 0) return state;
-          const applied = Math.min(card.balance, amount);
-          return {
-            giftCards: state.giftCards.map((g) =>
-              g.code === card.code
-                ? { ...g, balance: g.balance - applied, status: g.balance - applied <= 0 ? "redeemed" : "active" }
-                : g
-            ),
-            activityLog: [
-              logEntry("Gift Card Redeemed", `${card.code} — ₹${applied.toLocaleString("en-IN")} applied`),
-              ...state.activityLog,
-            ].slice(0, 100),
-          };
-        }),
-
-      toggleGiftCardStatus: (code) =>
-        set((state) => ({
-          giftCards: state.giftCards.map((g) =>
-            g.code === code
-              ? { ...g, status: g.status === "disabled" ? (g.balance > 0 ? "active" : "redeemed") : "disabled" }
-              : g
-          ),
-          activityLog: [logEntry("Gift Card Status Changed", code), ...state.activityLog].slice(0, 100),
-        })),
-
       // ---------------- Coupons ----------------
       addCoupon: (coupon) =>
         set((state) => ({
@@ -432,7 +344,6 @@ export const useAdminStore = create(
           staff: MOCK_STAFF,
           settings: DEFAULT_SETTINGS,
           festiveCollections: FESTIVE_COLLECTIONS,
-          giftCards: DEFAULT_GIFT_CARDS,
           activityLog: [],
         }),
     }),

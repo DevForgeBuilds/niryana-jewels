@@ -48,7 +48,6 @@ export default function Footer() {
             <li><Link href="/shop?category=necklaces" className="hover:text-gold">Necklaces</Link></li>
             <li><Link href="/shop?category=bracelets" className="hover:text-gold">Bracelets</Link></li>
             <li><Link href="/shop?category=devotional" className="hover:text-gold">Devotional</Link></li>
-            <li><Link href="/gift-cards" className="hover:text-gold">Gift Cards</Link></li>
           </ul>
         </div>
 
