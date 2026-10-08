@@ -15,8 +15,31 @@ export default function AdminLoginPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
+  const [forgotMode, setForgotMode] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [forgotMessage, setForgotMessage] = useState("");
+  const [forgotLoading, setForgotLoading] = useState(false);
   const markLoggedIn = useAdminAuthStore((s) => s.markLoggedIn);
   const router = useRouter();
+
+  async function requestPasswordResetInstructions(e) {
+    e.preventDefault();
+    setForgotMessage("");
+    setForgotLoading(true);
+    try {
+      const res = await fetch("/api/admin/auth/forgot-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: forgotEmail }),
+      });
+      const data = await res.json();
+      setForgotMessage(data.message || "If that email is registered, instructions have been sent to it.");
+    } catch {
+      setForgotMessage("Something went wrong. Please try again in a moment.");
+    } finally {
+      setForgotLoading(false);
+    }
+  }
 
   async function requestOtp(e) {
     e?.preventDefault();
@@ -83,39 +106,91 @@ export default function AdminLoginPage() {
         </div>
 
         {step === "credentials" ? (
-          <>
-            <h1 className="font-serif text-2xl text-forest text-center mb-1">Admin Login</h1>
-            <p className="text-xs text-charcoal/50 text-center mb-6">
-              Sign in with your admin email and password.
-            </p>
-            <form onSubmit={requestOtp} className="space-y-4">
-              <input
-                type="email"
-                required
-                autoFocus
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Admin email"
-                className="w-full border border-forest/20 rounded-lg px-4 py-3"
-              />
-              <input
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Password"
-                className="w-full border border-forest/20 rounded-lg px-4 py-3"
-              />
-              {error && <p className="text-red-500 text-sm">{error}</p>}
+          forgotMode ? (
+            <>
+              <h1 className="font-serif text-2xl text-forest text-center mb-1">Forgot Password?</h1>
+              <p className="text-xs text-charcoal/50 text-center mb-6">
+                Enter the admin email and we&apos;ll send instructions for resetting the password.
+              </p>
+              <form onSubmit={requestPasswordResetInstructions} className="space-y-4">
+                <input
+                  type="email"
+                  required
+                  autoFocus
+                  value={forgotEmail}
+                  onChange={(e) => setForgotEmail(e.target.value)}
+                  placeholder="Admin email"
+                  className="w-full border border-forest/20 rounded-lg px-4 py-3"
+                />
+                {forgotMessage && (
+                  <p className="text-forest text-xs text-center bg-forest/5 rounded-lg px-3 py-2">{forgotMessage}</p>
+                )}
+                <button
+                  type="submit"
+                  disabled={forgotLoading}
+                  className="w-full bg-forest text-cream py-3 rounded-full text-sm uppercase tracking-widest hover:bg-gold hover:text-forest transition-colors duration-300 disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  {forgotLoading ? "Sending…" : "Send Instructions"}
+                </button>
+              </form>
               <button
-                type="submit"
-                disabled={loading}
-                className="w-full bg-forest text-cream py-3 rounded-full text-sm uppercase tracking-widest hover:bg-gold hover:text-forest transition-colors duration-300 disabled:opacity-60 disabled:cursor-not-allowed"
+                onClick={() => {
+                  setForgotMode(false);
+                  setForgotMessage("");
+                }}
+                className="w-full text-center text-charcoal/50 hover:underline text-xs mt-4"
               >
-                {loading ? "Sending code…" : "Continue"}
+                ← Back to login
               </button>
-            </form>
-          </>
+            </>
+          ) : (
+            <>
+              <h1 className="font-serif text-2xl text-forest text-center mb-1">Admin Login</h1>
+              <p className="text-xs text-charcoal/50 text-center mb-6">
+                Sign in with your admin email and password.
+              </p>
+              <form onSubmit={requestOtp} className="space-y-4">
+                <input
+                  type="email"
+                  required
+                  autoFocus
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Admin email"
+                  className="w-full border border-forest/20 rounded-lg px-4 py-3"
+                />
+                <input
+                  type="password"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Password"
+                  className="w-full border border-forest/20 rounded-lg px-4 py-3"
+                />
+                <div className="text-right -mt-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setForgotEmail(email);
+                      setForgotMessage("");
+                      setForgotMode(true);
+                    }}
+                    className="text-xs text-charcoal/50 hover:text-gold hover:underline"
+                  >
+                    Forgot password?
+                  </button>
+                </div>
+                {error && <p className="text-red-500 text-sm">{error}</p>}
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full bg-forest text-cream py-3 rounded-full text-sm uppercase tracking-widest hover:bg-gold hover:text-forest transition-colors duration-300 disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  {loading ? "Sending code…" : "Continue"}
+                </button>
+              </form>
+            </>
+          )
         ) : (
           <>
             <h1 className="font-serif text-2xl text-forest text-center mb-1">Enter Verification Code</h1>
