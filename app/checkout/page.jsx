@@ -63,6 +63,10 @@ export default function CheckoutPage() {
   const settings = useAdminStore((s) => s.settings);
   const findValidCoupon = useAdminStore((s) => s.findValidCoupon);
   const incrementCouponUsage = useAdminStore((s) => s.incrementCouponUsage);
+  const addOrder = useAdminStore((s) => s.addOrder);
+  const findActiveGiftCard = useAdminStore((s) => s.findActiveGiftCard);
+  const redeemGiftCardAmount = useAdminStore((s) => s.redeemGiftCardAmount);
+  const issueGiftCard = useAdminStore((s) => s.issueGiftCard);
   const setLastOrder = useLastOrderStore((s) => s.setOrder);
   const gstRate = settings.gstRate;
   const router = useRouter();
@@ -79,6 +83,9 @@ export default function CheckoutPage() {
   const [couponError, setCouponError] = useState("");
   const [giftWrap, setGiftWrap] = useState(false);
   const [giftNote, setGiftNote] = useState("");
+  const [giftCardInput, setGiftCardInput] = useState("");
+  const [appliedGiftCard, setAppliedGiftCard] = useState(null); // { code, balance }
+  const [giftCardError, setGiftCardError] = useState("");
 
   const sub = subtotal();
   const discount = appliedCoupon
@@ -90,6 +97,8 @@ export default function CheckoutPage() {
   const gst = Math.round(discountedSub * (gstRate / 100));
   const codFee = paymentMethod === "cod" ? CASH_ON_DELIVERY_FEE : 0;
   const total = discountedSub + gst + codFee;
+  const giftCardApplied = appliedGiftCard ? Math.min(appliedGiftCard.balance, total) : 0;
+  const payable = Math.max(0, total - giftCardApplied);
 
   function handleChange(e) {
     const { name, value } = e.target;
@@ -127,6 +136,27 @@ export default function CheckoutPage() {
     toast("Coupon removed", "info");
   }
 
+  function handleApplyGiftCard() {
+    setGiftCardError("");
+    if (!giftCardInput.trim()) return;
+    const card = findActiveGiftCard(giftCardInput);
+    if (!card) {
+      setGiftCardError("Invalid, expired, or already-redeemed gift card code.");
+      setAppliedGiftCard(null);
+      toast("Invalid gift card code.", "error");
+      return;
+    }
+    setAppliedGiftCard({ code: card.code, balance: card.balance });
+    toast(`Gift card applied — ₹${card.balance.toLocaleString("en-IN")} available!`, "success");
+  }
+
+  function handleRemoveGiftCard() {
+    setAppliedGiftCard(null);
+    setGiftCardInput("");
+    setGiftCardError("");
+    toast("Gift card removed", "info");
+  }
+
   async function handleRazorpayPayment() {
     setPayError("");
 
@@ -143,7 +173,7 @@ export default function CheckoutPage() {
       const res = await fetch(`${API_URL}/api/razorpay/create-order`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount: total, receipt: `NJ-${Date.now()}` }),
+        body: JSON.stringify({ amount: payable, receipt: `NJ-${Date.now()}` }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Could not create order");
@@ -199,13 +229,41 @@ export default function CheckoutPage() {
     rzp.open();
   }
 
-  function completeOrder() {
+  function completeOrder(overridePaymentMethod) {
+    const effectivePaymentMethod = overridePaymentMethod || paymentMethod;
     const orderNumber = `NJ${Date.now().toString().slice(-8)}`;
+
+    // Redeem whatever gift card balance was applied as part of the payment.
+    if (appliedGiftCard && giftCardApplied > 0) {
+      redeemGiftCardAmount(appliedGiftCard.code, giftCardApplied);
+    }
+
+    // If this cart contains any Gift Card purchases, mint a fresh code for
+    // each one now (one per quantity) so it can be shown on the confirmation
+    // page and shared with the recipient.
+    const issuedGiftCards = [];
+    items
+      .filter((i) => i.type === "giftcard")
+      .forEach((i) => {
+        for (let n = 0; n < i.quantity; n++) {
+          const code = issueGiftCard({
+            amount: i.giftCardAmount,
+            buyerName: form.name,
+            buyerEmail: form.email,
+            recipientName: i.recipientName,
+            recipientEmail: i.recipientEmail,
+            message: i.giftMessage,
+            orderNumber,
+          });
+          issuedGiftCards.push({ code, amount: i.giftCardAmount, recipientName: i.recipientName });
+        }
+      });
+
     setLastOrder({
       orderNumber,
       items: items.map((i) => ({ ...i })),
       form: { ...form },
-      paymentMethod,
+      paymentMethod: effectivePaymentMethod,
       giftWrap,
       giftNote,
       subtotal: sub,
@@ -214,8 +272,42 @@ export default function CheckoutPage() {
       gst,
       codFee,
       total,
+      giftCardApplied,
+      giftCardCode: appliedGiftCard?.code || null,
+      payable,
+      issuedGiftCards,
       placedAt: new Date().toISOString(),
     });
+
+    // Push this order straight into the Admin Dashboard's shared store so it
+    // shows up under Admin → Orders immediately (same browser), along with
+    // stock deduction and a customer record — no manual sync needed.
+    addOrder({
+      orderNumber,
+      customerName: form.name,
+      phone: form.phone,
+      email: form.email,
+      address: `${form.address}, ${form.city} - ${form.pincode}`,
+      items: items.map((i) => ({
+        productId: i.productId,
+        name: i.name,
+        quantity: i.quantity,
+        price: i.price,
+        size: i.size || null,
+      })),
+      subtotal: sub,
+      discount,
+      couponCode: appliedCoupon?.code || null,
+      gst,
+      codFee,
+      giftCardApplied,
+      total,
+      paymentMethod: effectivePaymentMethod,
+      giftWrap,
+      giftNote,
+      createdAt: new Date().toISOString().slice(0, 10),
+    });
+
     clearCart();
     router.push("/order-confirmation");
   }
@@ -249,7 +341,11 @@ export default function CheckoutPage() {
     }
 
     setPlacing(true);
-    if (paymentMethod === "cod") {
+    if (payable <= 0) {
+      // Fully covered by the applied gift card — nothing left to charge.
+      if (appliedCoupon) incrementCouponUsage(appliedCoupon.id);
+      completeOrder("giftcard");
+    } else if (paymentMethod === "cod") {
       await handleCodOrder();
     } else {
       await handleRazorpayPayment();
@@ -456,7 +552,7 @@ export default function CheckoutPage() {
                       <span className="font-medium text-forest">Cash on Delivery</span>
                     </span>
                     <span className="block text-xs text-charcoal/50 mt-1">
-                      Pay ₹{total.toLocaleString("en-IN")} in cash when your order arrives
+                      Pay ₹{payable.toLocaleString("en-IN")} in cash when your order arrives
                       {CASH_ON_DELIVERY_FEE > 0 && ` (includes ₹${CASH_ON_DELIVERY_FEE} COD fee)`}
                     </span>
                   </span>
@@ -522,9 +618,11 @@ export default function CheckoutPage() {
             >
               {placing
                 ? "Processing…"
+                : payable <= 0
+                ? "Place Order — Fully Covered by Gift Card"
                 : paymentMethod === "cod"
-                ? `Place Order — Pay ₹${total.toLocaleString("en-IN")} on Delivery`
-                : `Pay ₹${total.toLocaleString("en-IN")} with Razorpay`}
+                ? `Place Order — Pay ₹${payable.toLocaleString("en-IN")} on Delivery`
+                : `Pay ₹${payable.toLocaleString("en-IN")} with Razorpay`}
             </motion.button>
 
             <div className="flex flex-wrap items-center justify-center gap-2 mt-6">
@@ -561,8 +659,8 @@ export default function CheckoutPage() {
         <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-forest/10 px-4 py-3 shadow-[0_-4px_16px_rgba(0,0,0,0.06)]">
           <div className="flex items-center justify-between gap-4">
             <div>
-              <p className="text-[10px] uppercase tracking-wide text-charcoal/50">Total</p>
-              <p className="text-forest font-medium text-lg">₹{total.toLocaleString("en-IN")}</p>
+              <p className="text-[10px] uppercase tracking-wide text-charcoal/50">Payable</p>
+              <p className="text-forest font-medium text-lg">₹{payable.toLocaleString("en-IN")}</p>
             </div>
             <motion.button
               type="submit"
@@ -649,6 +747,43 @@ export default function CheckoutPage() {
               )}
             </div>
 
+            {/* Gift Card Redemption */}
+            <div className="border-t border-forest/10 pt-4 mb-4">
+              {appliedGiftCard ? (
+                <div className="flex items-center justify-between bg-white rounded-xl px-4 py-3 text-sm">
+                  <span className="text-forest font-medium flex items-center gap-2">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#C9A86A" strokeWidth="1.8">
+                      <rect x="3" y="8" width="18" height="13" rx="1.5" />
+                      <path d="M3 12h18M12 8v13" strokeLinecap="round" />
+                    </svg>
+                    {appliedGiftCard.code} — ₹{appliedGiftCard.balance.toLocaleString("en-IN")} available
+                  </span>
+                  <button type="button" onClick={handleRemoveGiftCard} className="text-xs text-red-500 uppercase tracking-widest">
+                    Remove
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <div className="flex gap-2">
+                    <input
+                      value={giftCardInput}
+                      onChange={(e) => setGiftCardInput(e.target.value.toUpperCase())}
+                      placeholder="Gift Card Code"
+                      className="flex-1 min-w-0 border border-forest/15 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gold/50"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleApplyGiftCard}
+                      className="px-5 py-2.5 rounded-xl border border-forest/20 text-forest text-xs uppercase tracking-widest hover:bg-forest hover:text-cream transition-colors duration-300"
+                    >
+                      Apply
+                    </button>
+                  </div>
+                  {giftCardError && <p className="text-red-500 text-xs mt-2">{giftCardError}</p>}
+                </>
+              )}
+            </div>
+
             <div className="space-y-2 text-sm border-t border-forest/10 pt-4">
               <div className="flex justify-between text-charcoal/70">
                 <span>Subtotal</span>
@@ -670,10 +805,16 @@ export default function CheckoutPage() {
                   <span>₹{codFee.toLocaleString("en-IN")}</span>
                 </div>
               )}
+              {giftCardApplied > 0 && (
+                <div className="flex justify-between text-gold font-medium">
+                  <span>Gift Card ({appliedGiftCard.code})</span>
+                  <span>−₹{giftCardApplied.toLocaleString("en-IN")}</span>
+                </div>
+              )}
             </div>
             <div className="flex justify-between font-medium text-forest text-lg border-t border-forest/10 pt-4 mt-2">
-              <span>Total</span>
-              <span>₹{total.toLocaleString("en-IN")}</span>
+              <span>Amount Payable</span>
+              <span>₹{payable.toLocaleString("en-IN")}</span>
             </div>
 
             <div className="flex items-center gap-2 text-xs text-charcoal/40 mt-6 pt-4 border-t border-forest/10">

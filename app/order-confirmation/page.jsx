@@ -61,7 +61,13 @@ export default function OrderConfirmationPage() {
       <Reveal delay={0.1} className="bg-cream-soft rounded-2xl p-6 md:p-8 mb-8 grid grid-cols-1 sm:grid-cols-2 gap-6">
         <div>
           <p className="text-xs uppercase tracking-wide text-charcoal/50 mb-1">Payment Method</p>
-          <p className="text-forest font-medium">{order.paymentMethod === "cod" ? "Cash on Delivery" : "Paid Online via Razorpay"}</p>
+          <p className="text-forest font-medium">
+            {order.paymentMethod === "cod"
+              ? "Cash on Delivery"
+              : order.paymentMethod === "giftcard"
+              ? "Fully Paid by Gift Card"
+              : "Paid Online via Razorpay"}
+          </p>
         </div>
         <div className="sm:col-span-2">
           <p className="text-xs uppercase tracking-wide text-charcoal/50 mb-1">Delivery Address</p>
@@ -125,12 +131,51 @@ export default function OrderConfirmationPage() {
               <span>₹{order.codFee.toLocaleString("en-IN")}</span>
             </div>
           )}
+          {order.giftCardApplied > 0 && (
+            <div className="flex justify-between text-gold font-medium">
+              <span>Gift Card {order.giftCardCode ? `(${order.giftCardCode})` : ""}</span>
+              <span>−₹{order.giftCardApplied.toLocaleString("en-IN")}</span>
+            </div>
+          )}
         </div>
         <div className="flex justify-between font-medium text-forest text-lg border-t border-forest/10 pt-4 mt-2">
           <span>Total Paid</span>
-          <span>₹{order.total.toLocaleString("en-IN")}</span>
+          <span>₹{(order.payable ?? order.total).toLocaleString("en-IN")}</span>
         </div>
       </Reveal>
+
+      {order.issuedGiftCards?.length > 0 && (
+        <Reveal delay={0.18} className="bg-cream-soft rounded-2xl p-6 md:p-8 mb-8">
+          <h2 className="font-serif text-xl text-forest mb-2">Your Gift Card{order.issuedGiftCards.length > 1 ? "s" : ""}</h2>
+          <p className="text-charcoal/60 text-sm mb-5">
+            Share the code below with the recipient — it can be redeemed on any purchase at checkout.
+          </p>
+          <div className="space-y-3">
+            {order.issuedGiftCards.map((g) => (
+              <div
+                key={g.code}
+                className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 bg-white rounded-xl px-5 py-4"
+              >
+                <div>
+                  <p className="text-xs uppercase tracking-widest text-charcoal/50 mb-1">
+                    For {g.recipientName || "Recipient"} · ₹{g.amount.toLocaleString("en-IN")}
+                  </p>
+                  <p className="font-serif text-lg text-forest tracking-widest">{g.code}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigator.clipboard?.writeText(g.code);
+                  }}
+                  className="self-start sm:self-auto border border-forest/20 text-forest px-4 py-2 rounded-full text-xs uppercase tracking-widest hover:bg-forest hover:text-cream transition-colors duration-300"
+                >
+                  Copy Code
+                </button>
+              </div>
+            ))}
+          </div>
+        </Reveal>
+      )}
 
       <Reveal delay={0.2} className="text-center flex flex-col sm:flex-row gap-3 justify-center">
         <Link

@@ -15,6 +15,7 @@ const LINKS = [
   { href: "/shop", label: "Shop" },
   { href: "/collections", label: "Collections" },
   { href: "/shop?category=devotional", label: "Devotional" },
+  { href: "/gift-cards", label: "Gift Cards" },
   { href: "/about", label: "About" },
   { href: "/contact", label: "Contact" },
 ];

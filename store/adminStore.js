@@ -19,8 +19,31 @@ const DEFAULT_SETTINGS = {
   codEnabled: true,
 };
 
+const DEFAULT_GIFT_CARDS = [
+  {
+    code: "NJGC-WELCOME25",
+    initialAmount: 2500,
+    balance: 2500,
+    buyerName: "Niryana Jewels",
+    buyerEmail: "niryanajewels@gmail.com",
+    recipientName: "Demo Recipient",
+    recipientEmail: "demo@example.com",
+    message: "Sample gift card — demo data.",
+    status: "active",
+    issuedAt: "2026-09-01",
+    orderNumber: null,
+  },
+];
+
 function logEntry(action, detail) {
   return { id: Date.now() + Math.random(), action, detail, timestamp: new Date().toISOString() };
+}
+
+function generateGiftCardCode() {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let suffix = "";
+  for (let i = 0; i < 8; i++) suffix += chars[Math.floor(Math.random() * chars.length)];
+  return `NJGC-${suffix}`;
 }
 
 // ---------------------------------------------------------------------------------
@@ -41,6 +64,7 @@ export const useAdminStore = create(
       staff: MOCK_STAFF,
       settings: DEFAULT_SETTINGS,
       festiveCollections: FESTIVE_COLLECTIONS,
+      giftCards: DEFAULT_GIFT_CARDS,
       activityLog: [],
 
       pushLog: (action, detail) =>
@@ -81,11 +105,83 @@ export const useAdminStore = create(
         })),
 
       // ---------------- Orders ----------------
+      // Called from the live checkout flow so a real customer order shows up
+      // here immediately — in production this would be a MySQL INSERT instead,
+      // triggered from the same place in the checkout flow.
+      addOrder: (orderData) =>
+        set((state) => {
+          const nextId = state.orders.length
+            ? Math.max(...state.orders.map((o) => o.id)) + 1
+            : 1;
+          const newOrder = {
+            id: nextId,
+            orderNumber: orderData.orderNumber,
+            customerName: orderData.customerName,
+            phone: orderData.phone,
+            email: orderData.email,
+            address: orderData.address,
+            items: orderData.items,
+            subtotal: orderData.subtotal,
+            discount: orderData.discount || 0,
+            couponCode: orderData.couponCode || null,
+            gst: orderData.gst,
+            codFee: orderData.codFee || 0,
+            total: orderData.total,
+            paymentMethod: orderData.paymentMethod,
+            giftWrap: !!orderData.giftWrap,
+            giftNote: orderData.giftNote || "",
+            status: orderData.paymentMethod === "cod" ? "pending" : "processing",
+            createdAt: orderData.createdAt || new Date().toISOString().slice(0, 10),
+          };
+
+          // Decrement stock for each purchased product, where we can match it.
+          const products = state.products.map((p) => {
+            const line = orderData.items.find((i) => i.productId === p.id);
+            if (!line) return p;
+            return { ...p, stock_quantity: Math.max(0, (p.stock_quantity ?? 0) - line.quantity) };
+          });
+
+          // Upsert the customer record so repeat buyers accumulate order history.
+          const existingCustomer = state.customers.find(
+            (c) => c.email.toLowerCase() === orderData.email.toLowerCase()
+          );
+          const customers = existingCustomer
+            ? state.customers.map((c) =>
+                c.email.toLowerCase() === orderData.email.toLowerCase()
+                  ? { ...c, orders: c.orders + 1, totalSpent: c.totalSpent + orderData.total }
+                  : c
+              )
+            : [
+                ...state.customers,
+                {
+                  id: state.customers.length
+                    ? Math.max(...state.customers.map((c) => c.id)) + 1
+                    : 1,
+                  name: orderData.customerName,
+                  email: orderData.email,
+                  phone: orderData.phone,
+                  orders: 1,
+                  totalSpent: orderData.total,
+                },
+              ];
+
+          return {
+            orders: [newOrder, ...state.orders],
+            products,
+            customers,
+            activityLog: [
+              logEntry("New Order Placed", `${newOrder.orderNumber} — ₹${newOrder.total.toLocaleString("en-IN")}`),
+              ...state.activityLog,
+            ].slice(0, 100),
+          };
+        }),
+
       updateOrderStatus: (id, status) =>
         set((state) => ({
           orders: state.orders.map((o) => (o.id === id ? { ...o, status } : o)),
           activityLog: [logEntry("Order Status Updated", `#${id} → ${status}`), ...state.activityLog].slice(0, 100),
         })),
+
 
       getOrderById: (id) => get().orders.find((o) => String(o.id) === String(id)),
 
@@ -167,6 +263,70 @@ export const useAdminStore = create(
                 : [...c.productSlugs, productSlug],
             };
           }),
+        })),
+
+      // ---------------- Gift Cards ----------------
+      // Issued automatically when a customer buys a Gift Card at checkout, or
+      // manually by an admin. Redeemed as a payment method on a later order.
+      // Returns the generated code so the checkout flow can show it on the
+      // order confirmation page right away.
+      issueGiftCard: ({ amount, buyerName, buyerEmail, recipientName, recipientEmail, message, orderNumber }) => {
+        let code = generateGiftCardCode();
+        while (get().giftCards.some((g) => g.code === code)) code = generateGiftCardCode();
+        const card = {
+          code,
+          initialAmount: amount,
+          balance: amount,
+          buyerName: buyerName || "",
+          buyerEmail: buyerEmail || "",
+          recipientName: recipientName || "",
+          recipientEmail: recipientEmail || "",
+          message: message || "",
+          status: "active",
+          issuedAt: new Date().toISOString().slice(0, 10),
+          orderNumber: orderNumber || null,
+        };
+        set((state) => ({
+          giftCards: [card, ...state.giftCards],
+          activityLog: [
+            logEntry("Gift Card Issued", `${code} — ₹${amount.toLocaleString("en-IN")}`),
+            ...state.activityLog,
+          ].slice(0, 100),
+        }));
+        return code;
+      },
+
+      findActiveGiftCard: (code) =>
+        get().giftCards.find(
+          (g) => g.code.toLowerCase() === String(code || "").trim().toLowerCase() && g.status === "active" && g.balance > 0
+        ),
+
+      redeemGiftCardAmount: (code, amount) =>
+        set((state) => {
+          const card = state.giftCards.find((g) => g.code.toLowerCase() === String(code || "").toLowerCase());
+          if (!card || card.status !== "active" || card.balance <= 0) return state;
+          const applied = Math.min(card.balance, amount);
+          return {
+            giftCards: state.giftCards.map((g) =>
+              g.code === card.code
+                ? { ...g, balance: g.balance - applied, status: g.balance - applied <= 0 ? "redeemed" : "active" }
+                : g
+            ),
+            activityLog: [
+              logEntry("Gift Card Redeemed", `${card.code} — ₹${applied.toLocaleString("en-IN")} applied`),
+              ...state.activityLog,
+            ].slice(0, 100),
+          };
+        }),
+
+      toggleGiftCardStatus: (code) =>
+        set((state) => ({
+          giftCards: state.giftCards.map((g) =>
+            g.code === code
+              ? { ...g, status: g.status === "disabled" ? (g.balance > 0 ? "active" : "redeemed") : "disabled" }
+              : g
+          ),
+          activityLog: [logEntry("Gift Card Status Changed", code), ...state.activityLog].slice(0, 100),
         })),
 
       // ---------------- Coupons ----------------
@@ -272,6 +432,7 @@ export const useAdminStore = create(
           staff: MOCK_STAFF,
           settings: DEFAULT_SETTINGS,
           festiveCollections: FESTIVE_COLLECTIONS,
+          giftCards: DEFAULT_GIFT_CARDS,
           activityLog: [],
         }),
     }),
