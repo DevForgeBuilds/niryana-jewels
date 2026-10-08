@@ -100,8 +100,8 @@ export default function AnalyticsPage() {
       </div>
 
       <p className="text-xs text-charcoal/40 mt-6">
-        Demo analytics computed from sample orders — replace with real aggregate
-        queries against MySQL (`orders`, `order_items`) once live.
+        Live data from MySQL — all figures above are computed in real time from actual
+        orders. Charts will populate as customers place orders.
       </p>
     </div>
   );

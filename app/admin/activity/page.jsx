@@ -32,8 +32,8 @@ export default function ActivityLogPage() {
         )}
       </div>
       <p className="text-xs text-charcoal/40 mt-4">
-        Tracked client-side for this demo session — persist to a MySQL `activity_log` table
-        (admin_id, action, detail, created_at) for a permanent audit trail.
+        Live data from MySQL — every action below is permanently recorded in the
+        `activity_log` table as it happens.
       </p>
     </div>
   );

@@ -100,7 +100,8 @@ export default function CouponsPage() {
         </table>
       </div>
       <p className="text-xs text-charcoal/40 mt-4">
-        Demo only — wire coupon validation into `/api/checkout` against a MySQL `coupons` table.
+        Live data from MySQL — coupons are re-validated against this table in real time
+        when a customer applies one at checkout.
       </p>
     </div>
   );

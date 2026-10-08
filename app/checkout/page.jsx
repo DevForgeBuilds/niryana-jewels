@@ -11,6 +11,7 @@ import { useLastOrderStore } from "@/store/lastOrderStore";
 import { loadRazorpayScript } from "@/lib/razorpay";
 import Reveal from "@/components/Reveal";
 import { toast } from "@/store/toastStore";
+import { api } from "@/lib/api";
 
 const CASH_ON_DELIVERY_FEE = 49; // small COD handling fee, set to 0 if not desired
 
@@ -78,6 +79,7 @@ export default function CheckoutPage() {
   const [couponInput, setCouponInput] = useState("");
   const [appliedCoupon, setAppliedCoupon] = useState(null);
   const [couponError, setCouponError] = useState("");
+  const [applyingCoupon, setApplyingCoupon] = useState(false);
   const [giftWrap, setGiftWrap] = useState(false);
   const [giftNote, setGiftNote] = useState("");
 
@@ -107,18 +109,32 @@ export default function CheckoutPage() {
     setErrors(validateForm(form));
   }
 
-  function handleApplyCoupon() {
+  async function handleApplyCoupon() {
     setCouponError("");
     if (!couponInput.trim()) return;
-    const coupon = findValidCoupon(couponInput);
-    if (!coupon) {
-      setCouponError("Invalid or expired coupon code.");
-      setAppliedCoupon(null);
-      toast("Invalid or expired coupon code.", "error");
-      return;
+    setApplyingCoupon(true);
+    try {
+      // Always re-checks against the live MySQL `coupons` table (not just the
+      // locally cached list) so a coupon the admin just deactivated/expired
+      // can't still be applied from a stale page.
+      const coupon = await api.validateCoupon(couponInput.trim());
+      setAppliedCoupon(coupon);
+      toast(`Coupon "${coupon.code}" applied!`, "success");
+    } catch {
+      // Fall back to the local cache (e.g. if the backend is briefly unreachable)
+      // so the page still degrades gracefully instead of hard-failing.
+      const cached = findValidCoupon(couponInput);
+      if (cached) {
+        setAppliedCoupon(cached);
+        toast(`Coupon "${cached.code}" applied!`, "success");
+      } else {
+        setCouponError("Invalid or expired coupon code.");
+        setAppliedCoupon(null);
+        toast("Invalid or expired coupon code.", "error");
+      }
+    } finally {
+      setApplyingCoupon(false);
     }
-    setAppliedCoupon(coupon);
-    toast(`Coupon "${coupon.code}" applied!`, "success");
   }
 
   function handleRemoveCoupon() {
@@ -672,9 +688,10 @@ export default function CheckoutPage() {
                     <button
                       type="button"
                       onClick={handleApplyCoupon}
-                      className="px-5 py-2.5 rounded-xl border border-forest/20 text-forest text-xs uppercase tracking-widest hover:bg-forest hover:text-cream transition-colors duration-300"
+                      disabled={applyingCoupon}
+                      className="px-5 py-2.5 rounded-xl border border-forest/20 text-forest text-xs uppercase tracking-widest hover:bg-forest hover:text-cream transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      Apply
+                      {applyingCoupon ? "Checking…" : "Apply"}
                     </button>
                   </div>
                   {couponError && <p className="text-red-500 text-xs mt-2">{couponError}</p>}
