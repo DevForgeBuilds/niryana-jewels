@@ -110,7 +110,7 @@ export default function AdminLoginPage() {
             <>
               <h1 className="font-serif text-2xl text-forest text-center mb-1">Forgot Password?</h1>
               <p className="text-xs text-charcoal/50 text-center mb-6">
-                Enter the admin email and we&apos;ll send instructions for resetting the password.
+                Enter the admin email and we&apos;ll send a link to reset the password.
               </p>
               <form onSubmit={requestPasswordResetInstructions} className="space-y-4">
                 <input
@@ -130,7 +130,7 @@ export default function AdminLoginPage() {
                   disabled={forgotLoading}
                   className="w-full bg-forest text-cream py-3 rounded-full text-sm uppercase tracking-widest hover:bg-gold hover:text-forest transition-colors duration-300 disabled:opacity-60 disabled:cursor-not-allowed"
                 >
-                  {forgotLoading ? "Sending…" : "Send Instructions"}
+                  {forgotLoading ? "Sending…" : "Send Reset Link"}
                 </button>
               </form>
               <button

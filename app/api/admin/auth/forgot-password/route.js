@@ -1,13 +1,15 @@
 // =====================================================================================
-// "Forgot password?" for the admin login. Since ADMIN_PASSWORD lives in a Vercel
-// environment variable (not a database), this can't reset the password directly.
-// Instead, if the submitted email matches ADMIN_EMAIL, it emails step-by-step
-// instructions for updating ADMIN_PASSWORD on Vercel and redeploying.
+// "Forgot password?" for the admin login. If the submitted email matches ADMIN_EMAIL,
+// emails a signed, time-limited reset link (see lib/otp.js createResetToken) to that
+// address. Clicking it lands on /admin/reset-password, where a new password can be set;
+// that page's API route (verify-and-apply) actually updates ADMIN_PASSWORD on Vercel
+// and triggers a redeploy — see lib/vercelDeploy.js.
 //
-// The response is always a generic success message regardless of whether the email
+// The response here is always a generic success message regardless of whether the email
 // matched, so this endpoint can't be used to probe/confirm the admin's email address.
 // =====================================================================================
-import { sendPasswordResetInstructionsEmail } from "@/lib/mailer";
+import { createResetToken } from "@/lib/otp";
+import { sendPasswordResetLinkEmail } from "@/lib/mailer";
 
 const attempts = new Map(); // ip -> { count, resetAt }
 const WINDOW_MS = 15 * 60 * 1000;
@@ -24,7 +26,7 @@ function isRateLimited(ip) {
   return rec.count > MAX_ATTEMPTS;
 }
 
-const GENERIC_MESSAGE = "If that email is registered as the admin account, reset instructions have been sent to it.";
+const GENERIC_MESSAGE = "If that email is registered as the admin account, a password reset link has been sent to it.";
 
 export async function POST(request) {
   const ip = request.headers.get("x-forwarded-for") || "unknown";
@@ -38,9 +40,16 @@ export async function POST(request) {
 
   if (adminEmail && submitted === adminEmail) {
     try {
-      await sendPasswordResetInstructionsEmail(adminEmail);
+      const token = createResetToken(adminEmail);
+      const siteUrl = (
+        process.env.SITE_URL ||
+        request.headers.get("origin") ||
+        "https://niryana-jewels-iota.vercel.app"
+      ).replace(/\/$/, "");
+      const resetUrl = `${siteUrl}/admin/reset-password?token=${encodeURIComponent(token)}`;
+      await sendPasswordResetLinkEmail(adminEmail, resetUrl);
     } catch (err) {
-      console.error("Failed to send password reset instructions email:", err);
+      console.error("Failed to send password reset link email:", err);
       // Still return the generic success message — don't leak send failures either.
     }
   }
