@@ -22,7 +22,9 @@ export default function ProductForm({ initial, productId }) {
   const [form, setForm] = useState(initial ? { ...EMPTY, ...initial } : EMPTY);
   const addProduct = useAdminStore((s) => s.addProduct);
   const updateProduct = useAdminStore((s) => s.updateProduct);
-  const categories = useAdminStore((s) => s.categories);
+  const categoriesRaw = useAdminStore((s) => s.categories);
+  // Keep the dropdown alphabetical regardless of admin-list insertion order.
+  const categories = [...categoriesRaw].sort((a, b) => a.name.localeCompare(b.name));
   const router = useRouter();
 
   function handleChange(field, value) {

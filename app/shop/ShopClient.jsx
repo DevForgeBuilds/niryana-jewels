@@ -10,7 +10,12 @@ function ShopContent() {
   const params = useSearchParams();
   const router = useRouter();
   const PRODUCTS = useAdminStore((s) => s.products);
-  const CATEGORIES = useAdminStore((s) => s.categories);
+  const CATEGORIES_RAW = useAdminStore((s) => s.categories);
+  // Keep the shop filter alphabetical regardless of admin-list insertion order.
+  const CATEGORIES = useMemo(
+    () => [...CATEGORIES_RAW].sort((a, b) => a.name.localeCompare(b.name)),
+    [CATEGORIES_RAW]
+  );
   const loading = useAdminStore((s) => s.loading);
   const initialCategory = params.get("category") || "all";
   const searchQuery = params.get("search") || "";
