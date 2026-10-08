@@ -22,7 +22,8 @@ export default function AdminLayout({ children }) {
 
   useEffect(() => {
     if (!hydrated) return;
-    if (!isAuthed && pathname !== "/admin/login") {
+    const isPublicRoute = pathname === "/admin/login" || pathname === "/admin/reset-password";
+    if (!isAuthed && !isPublicRoute) {
       router.replace("/admin/login");
     }
   }, [hydrated, isAuthed, pathname, router]);
@@ -32,9 +33,10 @@ export default function AdminLayout({ children }) {
     setMobileNavOpen(false);
   }, [pathname]);
 
-  if (pathname === "/admin/login") {
+  if (pathname === "/admin/login" || pathname === "/admin/reset-password") {
     return <div className="min-h-screen bg-cream-soft">{children}</div>;
   }
+
 
   if (!hydrated || !isAuthed) {
     return <div className="min-h-screen bg-cream-soft flex items-center justify-center text-forest">Loading…</div>;
