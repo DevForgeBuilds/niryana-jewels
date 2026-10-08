@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useAdminStore } from "@/store/adminStore";
-import { useAdminAuthStore, DEMO_ADMIN_PASSWORD } from "@/store/adminAuthStore";
 import { toast } from "@/store/toastStore";
 
 export default function SettingsPage() {
@@ -30,11 +29,14 @@ export default function SettingsPage() {
 
   function handlePasswordChange(e) {
     e.preventDefault();
-    if (pw.current !== DEMO_ADMIN_PASSWORD) {
-      toast("Current password incorrect (demo password is fixed in this prototype).", "error");
-      return;
-    }
-    toast("In production this would update the admin's password hash in MySQL `users` table. (Demo mode: password stays as-is.)", "info");
+    // The admin login credentials (email + password) now live server-side only, in
+    // the ADMIN_EMAIL / ADMIN_PASSWORD environment variables on the hosting platform
+    // (never shipped to the browser), so they can't be verified or changed from this
+    // client-side form. Update them directly in Vercel's project settings instead.
+    toast(
+      "To change the admin password, update the ADMIN_PASSWORD environment variable in your Vercel project settings and redeploy.",
+      "info"
+    );
     setPw({ current: "", next: "" });
   }
 
@@ -141,7 +143,11 @@ export default function SettingsPage() {
       </section>
 
       <section className="bg-white rounded-xl shadow-sm p-6">
-        <h2 className="font-serif text-xl text-forest mb-4">Change Admin Password</h2>
+        <h2 className="font-serif text-xl text-forest mb-1">Change Admin Password</h2>
+        <p className="text-xs text-charcoal/40 mb-4">
+          Login credentials are stored securely on the server, not in this app — this form
+          points you to where to update them.
+        </p>
         <form onSubmit={handlePasswordChange} className="space-y-3 max-w-sm">
           <input
             type="password"

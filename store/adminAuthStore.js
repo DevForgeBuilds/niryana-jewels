@@ -3,19 +3,18 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
-// DEMO-ONLY auth. Replace with NextAuth + JWT + real admin role check from the
-// `users.role = 'admin'` column in MySQL before going live.
-export const DEMO_ADMIN_PASSWORD = "niryana2026";
-
+// Real 2-step admin auth: email + password (checked server-side against ADMIN_EMAIL /
+// ADMIN_PASSWORD env vars — never shipped to the browser) followed by a one-time code
+// emailed to the admin's inbox via Gmail SMTP (see app/api/admin/auth/*). Once the OTP
+// is verified, `markLoggedIn()` flips this flag, which the admin layout checks before
+// rendering the dashboard. Session state itself is still a persisted client flag (not
+// a server session/cookie) — sufficient for this single-admin setup, but a good next
+// step if multiple staff accounts with real permissions are needed later.
 export const useAdminAuthStore = create(
   persist(
     (set) => ({
       isAuthed: false,
-      login: (password) => {
-        const ok = password === DEMO_ADMIN_PASSWORD;
-        if (ok) set({ isAuthed: true });
-        return ok;
-      },
+      markLoggedIn: () => set({ isAuthed: true }),
       logout: () => set({ isAuthed: false }),
     }),
     { name: "niryana-admin-auth" }
