@@ -6,7 +6,9 @@ const router = express.Router();
 
 router.get("/", async (_req, res) => {
   try {
-    const [rows] = await pool.query("SELECT slug, name FROM categories ORDER BY id ASC");
+    // Newest-added category first, so the admin list order matches what you see
+    // right after adding one (and stays that way after a page refresh too).
+    const [rows] = await pool.query("SELECT slug, name FROM categories ORDER BY id DESC");
     res.json(rows);
   } catch (err) {
     console.error(err);

@@ -125,7 +125,8 @@ export const useAdminStore = create((set, get) => ({
   // ---------------- Categories ----------------
   addCategory: async (name) => {
     const created = await api.createCategory(name);
-    set((state) => ({ categories: [...state.categories, created] }));
+    // Newest category shows up first in the admin list, not buried at the bottom.
+    set((state) => ({ categories: [created, ...state.categories] }));
     get().refreshActivity();
   },
 
