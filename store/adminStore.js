@@ -2,7 +2,7 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { PRODUCTS, CATEGORIES as BASE_CATEGORIES } from "@/data/products";
+import { PRODUCTS, CATEGORIES as BASE_CATEGORIES, FESTIVE_COLLECTIONS } from "@/data/products";
 import { MOCK_ORDERS, MOCK_CUSTOMERS } from "@/data/orders";
 import { MOCK_REVIEWS, MOCK_RETURNS, MOCK_STAFF } from "@/data/adminExtras";
 
@@ -40,6 +40,7 @@ export const useAdminStore = create(
       returns: MOCK_RETURNS,
       staff: MOCK_STAFF,
       settings: DEFAULT_SETTINGS,
+      festiveCollections: FESTIVE_COLLECTIONS,
       activityLog: [],
 
       pushLog: (action, detail) =>
@@ -106,6 +107,66 @@ export const useAdminStore = create(
       deleteCategory: (slug) =>
         set((state) => ({
           categories: state.categories.filter((c) => c.slug !== slug),
+        })),
+
+      // ---------------- Festive Collections ----------------
+      addFestiveCollection: (collection) =>
+        set((state) => {
+          const slug = collection.slug?.trim() ? slugify(collection.slug) : slugify(collection.name);
+          if (state.festiveCollections.some((c) => c.slug === slug)) {
+            return state; // slug already exists — caller should check first
+          }
+          return {
+            festiveCollections: [
+              ...state.festiveCollections,
+              {
+                accent: "gold",
+                heroImage: "",
+                heroVideo: "",
+                productSlugs: [],
+                ...collection,
+                slug,
+              },
+            ],
+            activityLog: [logEntry("Festive Collection Added", collection.name), ...state.activityLog].slice(0, 100),
+          };
+        }),
+
+      updateFestiveCollection: (slug, updates) =>
+        set((state) => ({
+          festiveCollections: state.festiveCollections.map((c) =>
+            c.slug === slug ? { ...c, ...updates } : c
+          ),
+          activityLog: [logEntry("Festive Collection Updated", updates.name || slug), ...state.activityLog].slice(
+            0,
+            100
+          ),
+        })),
+
+      deleteFestiveCollection: (slug) =>
+        set((state) => {
+          const c = state.festiveCollections.find((x) => x.slug === slug);
+          return {
+            festiveCollections: state.festiveCollections.filter((x) => x.slug !== slug),
+            activityLog: [logEntry("Festive Collection Deleted", c?.name || slug), ...state.activityLog].slice(
+              0,
+              100
+            ),
+          };
+        }),
+
+      toggleProductInCollection: (collectionSlug, productSlug) =>
+        set((state) => ({
+          festiveCollections: state.festiveCollections.map((c) => {
+            if (c.slug !== collectionSlug) return c;
+            const has = c.productSlugs.includes(productSlug);
+            return {
+              ...c,
+              productSlugs: has
+                ? c.productSlugs.filter((s) => s !== productSlug)
+                : [...c.productSlugs, productSlug],
+            };
+          }),
         })),
 
       // ---------------- Coupons ----------------
@@ -210,6 +271,7 @@ export const useAdminStore = create(
           returns: MOCK_RETURNS,
           staff: MOCK_STAFF,
           settings: DEFAULT_SETTINGS,
+          festiveCollections: FESTIVE_COLLECTIONS,
           activityLog: [],
         }),
     }),

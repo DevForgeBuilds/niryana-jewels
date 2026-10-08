@@ -2,26 +2,20 @@
 
 import Link from "next/link";
 import { useAdminStore } from "@/store/adminStore";
-import Reveal from "./Reveal";
+import Reveal from "@/components/Reveal";
 
-export default function FestiveBanner() {
+export default function CollectionsIndexClient() {
   const collections = useAdminStore((s) => s.festiveCollections);
 
-  if (!collections.length) return null;
-
   return (
-    <section className="max-w-7xl mx-auto px-6 py-20">
-      <Reveal className="text-center mb-14">
-        <p className="text-gold uppercase tracking-widest2 text-xs mb-3">Shop by Occasion</p>
-        <h2 className="font-serif text-3xl md:text-5xl text-forest">Festive Collections</h2>
-      </Reveal>
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-        {collections.map((c, i) => (
-          <Reveal key={c.slug} delay={i * 0.1}>
-            <Link
-              href={`/collections/${c.slug}`}
-              className="group relative block aspect-[4/5] rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-shadow duration-500 bg-forest"
-            >
+    <section className="max-w-6xl mx-auto px-6 grid md:grid-cols-3 gap-8">
+      {collections.map((c, i) => (
+        <Reveal key={c.slug} delay={i * 0.1}>
+          <Link
+            href={`/collections/${c.slug}`}
+            className="group block rounded-2xl overflow-hidden bg-white shadow-sm hover:shadow-xl transition-shadow duration-500"
+          >
+            <div className="relative aspect-[4/5] overflow-hidden bg-forest">
               {c.heroImage && (
                 // Admin-entered URLs can be from any domain, so a plain <img> is used
                 // here instead of next/image (which requires a pre-configured allowlist).
@@ -35,12 +29,17 @@ export default function FestiveBanner() {
               <div className="absolute inset-0 bg-gradient-to-t from-forest/80 via-forest/10 to-transparent" />
               <div className="absolute bottom-0 left-0 right-0 p-6 text-left">
                 <p className="text-gold uppercase tracking-widest text-xs mb-2">{c.tagline}</p>
-                <h3 className="font-serif text-xl text-white">{c.name}</h3>
+                <h2 className="font-serif text-2xl text-white">{c.name}</h2>
               </div>
-            </Link>
-          </Reveal>
-        ))}
-      </div>
+            </div>
+          </Link>
+        </Reveal>
+      ))}
+      {collections.length === 0 && (
+        <p className="md:col-span-3 text-center text-charcoal/60 py-16">
+          New collections are coming soon — check back shortly!
+        </p>
+      )}
     </section>
   );
 }

@@ -212,6 +212,15 @@ export const FESTIVE_COLLECTIONS = [
     heroImage: ASSETS.shreeRamPendant,
     heroVideo: ASSETS.mahadevProtectionReel,
     accent: "gold",
+    productSlugs: [
+      "9kt-gold-heart-ring",
+      "symphony-gold-band",
+      "shree-ram-pendant",
+      "mahadev-protection-pendant",
+      "diamond-drape-necklace",
+      "legacy-layered-necklace",
+      "hare-krishna-silver-pendant",
+    ],
   },
   {
     slug: "rakhi",
@@ -222,6 +231,14 @@ export const FESTIVE_COLLECTIONS = [
     heroImage: ASSETS.braceletEmeraldSatin,
     heroVideo: ASSETS.rakshaBandhanReel,
     accent: "rose",
+    productSlugs: [
+      "shree-ram-pendant",
+      "mahadev-protection-pendant",
+      "dainty-heart-pendant",
+      "dual-tone-cuff-bracelet",
+      "raksha-bandhan-rakhi-bracelet",
+      "hare-krishna-silver-pendant",
+    ],
   },
   {
     slug: "wedding",
@@ -232,6 +249,14 @@ export const FESTIVE_COLLECTIONS = [
     heroImage: ASSETS.fullLookNecklace,
     heroVideo: ASSETS.weekendRingsReel,
     accent: "forest",
+    productSlugs: [
+      "9kt-gold-heart-ring",
+      "ruby-dream-ring",
+      "symphony-gold-band",
+      "peacock-drop-earrings",
+      "diamond-drape-necklace",
+      "legacy-layered-necklace",
+    ],
   },
 ];
 
@@ -240,7 +265,13 @@ export function getFestiveCollection(slug) {
 }
 
 export function getProductsByOccasion(slug) {
-  return PRODUCTS.filter((p) => Array.isArray(p.occasions) && p.occasions.includes(slug));
+  const collection = getFestiveCollection(slug);
+  if (!collection) return [];
+  return getProductsBySlugs(collection.productSlugs, PRODUCTS);
+}
+
+export function getProductsBySlugs(slugs = [], allProducts = PRODUCTS) {
+  return allProducts.filter((p) => slugs.includes(p.slug));
 }
 
 export function getProductsByCategory(slug) {

@@ -11,6 +11,7 @@ const NAV = [
   { href: "/admin/analytics", label: "Analytics", icon: "chart" },
   { href: "/admin/products", label: "Products", icon: "box" },
   { href: "/admin/categories", label: "Categories", icon: "tag" },
+  { href: "/admin/collections", label: "Festive Collections", icon: "sparkle" },
   { href: "/admin/inventory", label: "Inventory", icon: "layers" },
   { href: "/admin/media", label: "Media Library", icon: "image" },
   { href: "/admin/orders", label: "Orders", icon: "bag" },
@@ -54,6 +55,8 @@ function Icon({ name }) {
       return <svg {...common}><path d="M12 3l7 3v6c0 4.5-3 8-7 9-4-1-7-4.5-7-9V6l7-3z"/></svg>;
     case "clock":
       return <svg {...common}><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>;
+    case "sparkle":
+      return <svg {...common}><path d="M12 2l1.8 5.6L19 9.5l-5.2 1.9L12 17l-1.8-5.6L5 9.5l5.2-1.9L12 2z"/><path d="M19 15l.8 2.4L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.6L19 15z"/></svg>;
     default:
       return null;
   }
