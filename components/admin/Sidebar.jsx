@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
-import { LOGO_URL } from "@/data/mediaManifest";
+import { LOGO_URL_LIGHT } from "@/data/mediaManifest";
 import { useAdminAuthStore } from "@/store/adminAuthStore";
 
 const NAV = [
@@ -74,10 +74,14 @@ export default function Sidebar({ mobileOpen = false, onClose = () => {} }) {
       }`}
     >
       <div className="p-6 border-b border-cream/10 flex items-start justify-between">
-        <div>
-          <div className="bg-cream rounded-lg inline-block px-3 py-2">
-            <Image src={LOGO_URL} alt="Niryana Jewels" width={120} height={60} className="h-8 w-auto object-contain" />
-          </div>
+        <div className="flex-1 flex flex-col items-center text-center">
+          <Image
+            src={LOGO_URL_LIGHT}
+            alt="Niryana Jewels"
+            width={160}
+            height={80}
+            className="h-12 w-auto object-contain"
+          />
           <p className="text-gold text-xs uppercase tracking-widest mt-3">Admin Panel</p>
         </div>
         <button
