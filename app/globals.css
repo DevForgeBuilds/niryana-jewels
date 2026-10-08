@@ -33,16 +33,27 @@ h1, h2, h3, h4, .font-serif {
 }
 
 /* thin gold scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #c9a86a transparent;
+}
 ::-webkit-scrollbar {
   width: 10px;
+  height: 10px;
 }
 ::-webkit-scrollbar-track {
-  background: #faf8f4;
+  background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #c9a86a;
+  background-color: rgba(201, 168, 106, 0.55);
   border-radius: 999px;
+  border: 3px solid transparent;
+  background-clip: content-box;
 }
+::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(201, 168, 106, 0.85);
+}
+
 
 /* Dual-thumb price range slider (Shop page) */
 .range-thumb {
