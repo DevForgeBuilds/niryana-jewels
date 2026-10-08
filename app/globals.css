@@ -54,6 +54,17 @@ h1, h2, h3, h4, .font-serif {
   background-color: rgba(201, 168, 106, 0.85);
 }
 
+/* Sidebar nav rarely needs scrolling and looks cleaner with no visible
+   scrollbar track/thumb at all (still scrollable via wheel/touch/drag). */
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+
 
 /* Dual-thumb price range slider (Shop page) */
 .range-thumb {
