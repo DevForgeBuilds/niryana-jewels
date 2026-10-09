@@ -58,7 +58,6 @@ export default function Footer() {
             <li><Link href="/faq" className="hover:text-gold">FAQ</Link></li>
             <li><Link href="/contact" className="hover:text-gold">Contact</Link></li>
             <li><Link href="/account" className="hover:text-gold">My Account</Link></li>
-            <li><Link href="/track-order" className="hover:text-gold">Track Order</Link></li>
             <li><Link href="/cart" className="hover:text-gold">Cart</Link></li>
           </ul>
           <h4 className="text-gold uppercase tracking-widest text-xs mb-4 mt-6">Legal</h4>

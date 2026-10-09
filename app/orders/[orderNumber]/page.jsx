@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import Image from "next/image";
-import Link from "next/link";
 import { api } from "@/lib/api";
 import { LOGO_URL } from "@/data/mediaManifest";
 import OrderStatusStepper from "@/components/OrderStatusStepper";
@@ -73,10 +72,7 @@ export default function CustomerInvoicePage() {
 
   return (
     <div className="pt-28 pb-24 max-w-3xl mx-auto px-6">
-      <div className="flex items-center justify-between mb-6 print:hidden">
-        <Link href="/track-order" className="text-sm text-forest hover:text-gold">
-          ← Track another order
-        </Link>
+      <div className="flex items-center justify-end mb-6 print:hidden">
         <button
           onClick={() => window.print()}
           className="bg-forest text-cream px-5 py-2 rounded-full text-sm uppercase tracking-widest hover:bg-gold hover:text-forest transition-colors"
