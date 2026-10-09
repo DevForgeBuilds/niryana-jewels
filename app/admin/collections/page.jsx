@@ -255,6 +255,16 @@ export default function AdminFestiveCollectionsPage() {
               only — to actually discount the price at checkout, also create/enable a matching coupon code
               under Admin → Coupons and enter it below.
             </p>
+            {!form.bannerEnabled && (form.discountPercent > 0 || form.saleStartsAt || form.saleEndsAt) && (
+              <div className="flex items-start gap-2 bg-amber-50 border border-amber-300 text-amber-800 text-xs rounded-lg px-3 py-2.5 mb-4">
+                <span className="font-bold">⚠</span>
+                <span>
+                  You've set a discount/dates below, but{" "}
+                  <strong>"Show on homepage" is still unchecked</strong> — nothing will appear on the live
+                  site until you tick that box above and save.
+                </span>
+              </div>
+            )}
             <div className="grid md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs uppercase tracking-widest text-charcoal/50 mb-1.5">
