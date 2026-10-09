@@ -12,7 +12,6 @@ import { loadRazorpayScript } from "@/lib/razorpay";
 import Reveal from "@/components/Reveal";
 import { toast } from "@/store/toastStore";
 import { api } from "@/lib/api";
-import { isSaleActive } from "@/lib/festiveSale";
 
 const CASH_ON_DELIVERY_FEE = 49; // small COD handling fee, set to 0 if not desired
 
@@ -63,7 +62,7 @@ const PAYMENT_BADGES = [
 export default function CheckoutPage() {
   const { items, subtotal, clearCart } = useCartStore();
   const settings = useAdminStore((s) => s.settings);
-  const festiveCollections = useAdminStore((s) => s.festiveCollections);
+  const coupons = useAdminStore((s) => s.coupons);
   const findValidCoupon = useAdminStore((s) => s.findValidCoupon);
   const incrementCouponUsage = useAdminStore((s) => s.incrementCouponUsage);
   const addOrder = useAdminStore((s) => s.addOrder);
@@ -122,11 +121,12 @@ export default function CheckoutPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [form.email, form.name, form.phone, items]);
 
-  // Surface any currently-live festive sale coupon(s) right on the coupon
-  // input — otherwise a shopper who lands straight on checkout (not via the
-  // homepage banner) has no way of knowing a code even exists, let alone
-  // what it is.
-  const activeOffers = festiveCollections.filter((c) => isSaleActive(c) && c.couponCode);
+  // Surface every currently-usable coupon (active + not expired) right on the
+  // coupon input — covers festive-sale codes (DIWALI10, etc.) *and* any other
+  // standing coupon from Admin → Coupons (e.g. WELCOME10, FESTIVE500).
+  // Otherwise a shopper who lands straight on checkout has no way of knowing
+  // a code even exists, let alone what it is.
+  const activeOffers = coupons.filter((c) => c.active && (!c.expiresAt || new Date(c.expiresAt) >= new Date()));
 
   function applyOfferCode(code) {
     setCouponInput(code);
@@ -736,17 +736,20 @@ export default function CheckoutPage() {
                   {activeOffers.length > 0 && (
                     <div className="flex flex-wrap items-center gap-2 mb-2.5">
                       <span className="text-xs text-charcoal/50">Active offers:</span>
-                      {activeOffers.map((c) => (
-                        <button
-                          key={c.slug}
-                          type="button"
-                          onClick={() => applyOfferCode(c.couponCode)}
-                          className="text-xs bg-gold/15 text-forest border border-gold/40 rounded-full px-3 py-1 hover:bg-gold/25 transition-colors"
-                          title={`Apply ${c.couponCode} — ${c.discountPercent}% off`}
-                        >
-                          {c.couponCode} · {c.discountPercent}% off
-                        </button>
-                      ))}
+                      {activeOffers.map((c) => {
+                        const label = c.type === "percent" ? `${c.value}% off` : `₹${c.value} off`;
+                        return (
+                          <button
+                            key={c.id}
+                            type="button"
+                            onClick={() => applyOfferCode(c.code)}
+                            className="text-xs bg-gold/15 text-forest border border-gold/40 rounded-full px-3 py-1 hover:bg-gold/25 transition-colors"
+                            title={`Apply ${c.code} — ${label}`}
+                          >
+                            {c.code} · {label}
+                          </button>
+                        );
+                      })}
                     </div>
                   )}
                   <div className="flex gap-2">
