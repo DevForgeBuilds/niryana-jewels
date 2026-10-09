@@ -9,6 +9,7 @@ import { useAdminAuthStore } from "@/store/adminAuthStore";
 const NAV = [
   { href: "/admin", label: "Dashboard", icon: "grid" },
   { href: "/admin/analytics", label: "Analytics", icon: "chart" },
+  { href: "/admin/reports", label: "Reports", icon: "download" },
   { href: "/admin/products", label: "Products", icon: "box" },
   { href: "/admin/categories", label: "Categories", icon: "tag" },
   { href: "/admin/collections", label: "Festive Collections", icon: "sparkle" },
@@ -60,6 +61,8 @@ function Icon({ name }) {
       return <svg {...common}><path d="M12 2l1.8 5.6L19 9.5l-5.2 1.9L12 17l-1.8-5.6L5 9.5l5.2-1.9L12 2z"/><path d="M19 15l.8 2.4L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.6L19 15z"/></svg>;
     case "mail":
       return <svg {...common}><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6" strokeLinecap="round" strokeLinejoin="round"/></svg>;
+    case "download":
+      return <svg {...common}><path d="M12 3v12" strokeLinecap="round"/><path d="M7 10l5 5 5-5" strokeLinecap="round" strokeLinejoin="round"/><path d="M4 19h16" strokeLinecap="round"/></svg>;
     default:
       return null;
   }

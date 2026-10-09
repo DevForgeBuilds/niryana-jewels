@@ -10,6 +10,8 @@ function mapRow(row) {
     freeShippingThreshold: Number(row.free_shipping_threshold),
     flatShippingRate: Number(row.flat_shipping_rate),
     codEnabled: Boolean(row.cod_enabled),
+    lowStockThreshold: Number(row.low_stock_threshold ?? 5),
+    alertEmail: row.alert_email || "",
   };
 }
 
@@ -38,11 +40,13 @@ router.put("/", async (req, res) => {
       freeShippingThreshold: "free_shipping_threshold",
       flatShippingRate: "flat_shipping_rate",
       codEnabled: "cod_enabled",
+      lowStockThreshold: "low_stock_threshold",
+      alertEmail: "alert_email",
     };
     for (const [key, col] of Object.entries(map)) {
       if (b[key] !== undefined) {
         fields.push(`${col} = ?`);
-        values.push(b[key]);
+        values.push(key === "alertEmail" && b[key] === "" ? null : b[key]);
       }
     }
     if (!fields.length) return res.status(400).json({ error: "No fields to update" });

@@ -9,6 +9,19 @@ async function mapCollection(row) {
     `SELECT p.slug FROM collection_products cp JOIN products p ON p.id = cp.product_id WHERE cp.collection_id = ?`,
     [row.id]
   );
+  // Sale start/end times are treated as plain "wall clock" values (the admin sets
+  // them assuming IST, same as the shop's target audience) rather than true UTC
+  // instants — so we deliberately use LOCAL (not UTC) Date getters here to read
+  // back exactly the digits that were stored, regardless of the DB server/driver's
+  // own timezone, and never append a "Z" (which would make browsers reinterpret it
+  // as UTC and shift it by their own offset).
+  const toNaiveIso = (d) => {
+    if (!(d instanceof Date)) return d;
+    const p = (n) => String(n).padStart(2, "0");
+    return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}:${p(
+      d.getSeconds()
+    )}`;
+  };
   return {
     slug: row.slug,
     name: row.name,
@@ -18,6 +31,12 @@ async function mapCollection(row) {
     heroImage: row.hero_image,
     heroVideo: row.hero_video,
     productSlugs: productRows.map((r) => r.slug),
+    // Festive sale banner fields — see backend/db.js ensureSchema.
+    discountPercent: Number(row.discount_percent || 0),
+    couponCode: row.coupon_code || "",
+    saleStartsAt: toNaiveIso(row.sale_starts_at),
+    saleEndsAt: toNaiveIso(row.sale_ends_at),
+    bannerEnabled: Boolean(row.banner_enabled),
   };
 }
 
@@ -37,8 +56,24 @@ router.post("/", async (req, res) => {
     const b = req.body;
     const slug = b.slug?.trim() ? slugify(b.slug) : slugify(b.name);
     const [result] = await pool.query(
-      "INSERT INTO festive_collections (slug, name, tagline, description, accent, hero_image, hero_video) VALUES (?, ?, ?, ?, ?, ?, ?)",
-      [slug, b.name, b.tagline || null, b.description || null, b.accent || "gold", b.heroImage || null, b.heroVideo || null]
+      `INSERT INTO festive_collections
+        (slug, name, tagline, description, accent, hero_image, hero_video,
+         discount_percent, coupon_code, sale_starts_at, sale_ends_at, banner_enabled)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        slug,
+        b.name,
+        b.tagline || null,
+        b.description || null,
+        b.accent || "gold",
+        b.heroImage || null,
+        b.heroVideo || null,
+        Number(b.discountPercent) || 0,
+        b.couponCode || null,
+        b.saleStartsAt || null,
+        b.saleEndsAt || null,
+        Boolean(b.bannerEnabled),
+      ]
     );
     if (Array.isArray(b.productSlugs) && b.productSlugs.length) {
       const [productRows] = await pool.query(
@@ -64,11 +99,23 @@ router.put("/:slug", async (req, res) => {
     const b = req.body;
     const fields = [];
     const values = [];
-    const map = { name: "name", tagline: "tagline", description: "description", accent: "accent", heroImage: "hero_image", heroVideo: "hero_video" };
+    const map = {
+      name: "name",
+      tagline: "tagline",
+      description: "description",
+      accent: "accent",
+      heroImage: "hero_image",
+      heroVideo: "hero_video",
+      discountPercent: "discount_percent",
+      couponCode: "coupon_code",
+      saleStartsAt: "sale_starts_at",
+      saleEndsAt: "sale_ends_at",
+      bannerEnabled: "banner_enabled",
+    };
     for (const [key, col] of Object.entries(map)) {
       if (b[key] !== undefined) {
         fields.push(`${col} = ?`);
-        values.push(b[key]);
+        values.push(key === "bannerEnabled" ? Boolean(b[key]) : b[key] === "" ? null : b[key]);
       }
     }
     if (fields.length) {

@@ -4,10 +4,9 @@ import { Fragment, useMemo, useState } from "react";
 import Image from "next/image";
 import { useAdminStore } from "@/store/adminStore";
 
-const LOW_STOCK_THRESHOLD = 5;
-
 export default function InventoryPage() {
-  const { products, adjustStock, adjustVariantStock } = useAdminStore();
+  const { products, adjustStock, adjustVariantStock, settings } = useAdminStore();
+  const LOW_STOCK_THRESHOLD = settings?.lowStockThreshold ?? 5;
   const [filter, setFilter] = useState("all");
   const [expanded, setExpanded] = useState({});
 

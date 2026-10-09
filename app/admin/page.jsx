@@ -14,11 +14,27 @@ function StatCard({ label, value, hint }) {
 }
 
 export default function AdminDashboard() {
-  const { products, orders } = useAdminStore();
+  const { products, orders, settings } = useAdminStore();
+  const threshold = settings?.lowStockThreshold ?? 5;
 
   const totalRevenue = orders.reduce((sum, o) => sum + o.total, 0);
   const pendingOrders = orders.filter((o) => o.status === "pending" || o.status === "processing").length;
-  const lowStock = products.filter((p) => (p.stock_quantity ?? 10) < 5).length;
+
+  // Flatten both plain products and per-size variants into one list of "low or out
+  // of stock" rows, sorted so the most urgent (0 left) show first.
+  const stockAlerts = products
+    .flatMap((p) => {
+      if (Array.isArray(p.variants) && p.variants.length > 0) {
+        return p.variants
+          .filter((v) => v.stock_quantity <= threshold)
+          .map((v) => ({ id: `${p.id}-${v.id}`, name: p.name, slug: p.slug, label: v.label, stock: v.stock_quantity }));
+      }
+      const stock = p.stock_quantity ?? 0;
+      return stock <= threshold ? [{ id: `${p.id}`, name: p.name, slug: p.slug, label: "", stock }] : [];
+    })
+    .sort((a, b) => a.stock - b.stock);
+
+  const lowStock = stockAlerts.length;
 
   const statusColor = {
     pending: "bg-yellow-100 text-yellow-700",
@@ -77,6 +93,39 @@ export default function AdminDashboard() {
         </table>
         </div>
       </div>
+
+      {stockAlerts.length > 0 && (
+        <div className="bg-white rounded-xl shadow-sm p-6 mt-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-serif text-xl text-forest">
+              Low Stock Alerts <span className="text-sm font-sans text-charcoal/40">(≤ {threshold} units)</span>
+            </h2>
+            <Link href="/admin/inventory" className="text-sm text-gold hover:underline">
+              Manage Inventory
+            </Link>
+          </div>
+          <div className="space-y-2">
+            {stockAlerts.slice(0, 6).map((item) => (
+              <div key={item.id} className="flex items-center justify-between bg-cream-soft rounded-lg px-4 py-2.5 text-sm">
+                <Link href={`/product/${item.slug}`} className="font-medium text-forest hover:text-gold truncate">
+                  {item.name}
+                  {item.label && <span className="text-charcoal/50 font-normal"> ({item.label})</span>}
+                </Link>
+                <span
+                  className={`px-2 py-1 rounded-full text-xs whitespace-nowrap ml-3 ${
+                    item.stock === 0 ? "bg-red-100 text-red-700" : "bg-yellow-100 text-yellow-700"
+                  }`}
+                >
+                  {item.stock === 0 ? "Out of stock" : `${item.stock} left`}
+                </span>
+              </div>
+            ))}
+          </div>
+          {stockAlerts.length > 6 && (
+            <p className="text-xs text-charcoal/40 mt-3">+ {stockAlerts.length - 6} more — see full list in Inventory.</p>
+          )}
+        </div>
+      )}
 
       <div className="mt-6 flex gap-4">
         <Link href="/admin/products/new" className="bg-forest text-cream px-5 py-2.5 rounded-full text-sm uppercase tracking-widest hover:bg-gold hover:text-forest transition-colors">

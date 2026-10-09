@@ -3,7 +3,8 @@ const express = require("express");
 const cors = require("cors");
 const crypto = require("crypto");
 const Razorpay = require("razorpay");
-const { ensureSchema } = require("./db");
+const { ensureSchema, pool } = require("./db");
+const { sendLowStockAlertEmail } = require("./lib/mailer");
 
 const productsRouter = require("./routes/products");
 const categoriesRouter = require("./routes/categories");
@@ -93,6 +94,74 @@ app.post("/api/cron/send-abandoned-cart-reminders", async (req, res) => {
   } catch (err) {
     console.error("Abandoned-cart reminder sweep failed:", err);
     res.status(500).json({ error: "Failed to send reminders" });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// POST /api/cron/send-low-stock-alerts
+// Protected the same way as the abandoned-cart cron above. Sends at most one
+// digest email per calendar day (tracked via settings.low_stock_alert_sent_date)
+// even though the GitHub Actions workflow calling this can run more than once —
+// so retries/manual triggers never spam the shop owner's inbox.
+// ---------------------------------------------------------------------------
+app.post("/api/cron/send-low-stock-alerts", async (req, res) => {
+  const secret = req.headers["x-cron-secret"];
+  if (!process.env.CRON_SECRET || secret !== process.env.CRON_SECRET) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+  try {
+    const [settingsRows] = await pool.query("SELECT * FROM settings WHERE id = 1");
+    const settings = settingsRows[0];
+    if (!settings || !settings.alert_email) {
+      return res.json({ ok: true, sent: false, reason: "No alert_email configured in Settings" });
+    }
+
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const lastSent = settings.low_stock_alert_sent_date
+      ? new Date(settings.low_stock_alert_sent_date).toISOString().slice(0, 10)
+      : null;
+    if (lastSent === todayStr) {
+      return res.json({ ok: true, sent: false, reason: "Already sent today" });
+    }
+
+    const threshold = Number(settings.low_stock_threshold ?? 5);
+
+    // Plain (no-variant) products below threshold.
+    const [plainRows] = await pool.query(
+      `SELECT p.name, p.stock_quantity AS stock
+       FROM products p
+       LEFT JOIN product_variants v ON v.product_id = p.id
+       WHERE v.id IS NULL AND p.is_active = TRUE AND p.stock_quantity <= ?
+       ORDER BY p.stock_quantity ASC`,
+      [threshold]
+    );
+    // Per-size variants below threshold.
+    const [variantRows] = await pool.query(
+      `SELECT p.name, pv.label AS variantLabel, pv.stock_quantity AS stock
+       FROM product_variants pv
+       JOIN products p ON p.id = pv.product_id
+       WHERE p.is_active = TRUE AND pv.stock_quantity <= ?
+       ORDER BY pv.stock_quantity ASC`,
+      [threshold]
+    );
+
+    const items = [...plainRows, ...variantRows].map((r) => ({
+      name: r.name,
+      variantLabel: r.variantLabel || "",
+      stock: r.stock,
+    }));
+
+    if (!items.length) {
+      await pool.query("UPDATE settings SET low_stock_alert_sent_date = ? WHERE id = 1", [todayStr]);
+      return res.json({ ok: true, sent: false, reason: "Nothing below threshold today" });
+    }
+
+    await sendLowStockAlertEmail(settings.alert_email, items, threshold);
+    await pool.query("UPDATE settings SET low_stock_alert_sent_date = ? WHERE id = 1", [todayStr]);
+    res.json({ ok: true, sent: true, count: items.length });
+  } catch (err) {
+    console.error("Low-stock alert sweep failed:", err);
+    res.status(500).json({ error: "Failed to send low-stock alerts" });
   }
 });
 

@@ -132,7 +132,21 @@ async function ensureSchema() {
       ) ENGINE=InnoDB
     `);
 
-    console.log("Schema check OK (abandoned_checkouts, stock_notifications, newsletter_subscribers, product_variants ready).");
+    // --- Festive sale banners (discount badge + countdown + optional coupon tie-in) ---
+    await addColumnIfMissing("festive_collections", "discount_percent TINYINT UNSIGNED NOT NULL DEFAULT 0");
+    await addColumnIfMissing("festive_collections", "coupon_code VARCHAR(50) DEFAULT NULL");
+    await addColumnIfMissing("festive_collections", "sale_starts_at DATETIME DEFAULT NULL");
+    await addColumnIfMissing("festive_collections", "sale_ends_at DATETIME DEFAULT NULL");
+    await addColumnIfMissing("festive_collections", "banner_enabled BOOLEAN NOT NULL DEFAULT FALSE");
+
+    // --- Low-stock alert settings (threshold + who gets notified + once-a-day throttle) ---
+    await addColumnIfMissing("settings", "low_stock_threshold INT UNSIGNED NOT NULL DEFAULT 5");
+    await addColumnIfMissing("settings", "alert_email VARCHAR(190) DEFAULT NULL");
+    await addColumnIfMissing("settings", "low_stock_alert_sent_date DATE DEFAULT NULL");
+
+    console.log(
+      "Schema check OK (abandoned_checkouts, stock_notifications, newsletter_subscribers, product_variants, festive sale fields, low-stock alert fields ready)."
+    );
   } catch (err) {
     console.error("ensureSchema failed:", err.message);
   }

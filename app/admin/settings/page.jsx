@@ -27,6 +27,19 @@ export default function SettingsPage() {
     }
   }
 
+  async function handleStockAlertSave(e) {
+    e.preventDefault();
+    try {
+      await updateSettings({
+        lowStockThreshold: Number(shipForm.lowStockThreshold),
+        alertEmail: shipForm.alertEmail || "",
+      });
+      toast("Low-stock alert settings saved.", "success");
+    } catch (err) {
+      toast(`Failed to save settings: ${err.message}`, "error");
+    }
+  }
+
   function handlePasswordChange(e) {
     e.preventDefault();
     // The admin login credentials (email + password) now live server-side only, in
@@ -121,6 +134,42 @@ export default function SettingsPage() {
             className="sm:col-span-2 bg-forest text-cream py-2.5 rounded-full text-sm uppercase tracking-widest hover:bg-gold hover:text-forest transition-colors"
           >
             Save Shipping &amp; Tax Settings
+          </button>
+        </form>
+      </section>
+
+      <section className="bg-white rounded-xl shadow-sm p-6">
+        <h2 className="font-serif text-xl text-forest mb-1">Low-Stock Alerts</h2>
+        <p className="text-xs text-charcoal/40 mb-4">
+          Controls the threshold used across Admin → Inventory/Dashboard, and (if an email is set) a
+          once-a-day email digest listing everything at or below it.
+        </p>
+        <form onSubmit={handleStockAlertSave} className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-lg">
+          <div>
+            <label className="text-xs uppercase tracking-widest text-charcoal/50">Low Stock Threshold (units)</label>
+            <input
+              type="number"
+              min="0"
+              value={shipForm.lowStockThreshold}
+              onChange={(e) => setShipForm({ ...shipForm, lowStockThreshold: e.target.value })}
+              className="w-full border border-forest/20 rounded-lg px-4 py-2.5 mt-1"
+            />
+          </div>
+          <div>
+            <label className="text-xs uppercase tracking-widest text-charcoal/50">Alert Email (optional)</label>
+            <input
+              type="email"
+              value={shipForm.alertEmail}
+              onChange={(e) => setShipForm({ ...shipForm, alertEmail: e.target.value })}
+              placeholder="owner@niryanajewels.com"
+              className="w-full border border-forest/20 rounded-lg px-4 py-2.5 mt-1"
+            />
+          </div>
+          <button
+            type="submit"
+            className="sm:col-span-2 bg-forest text-cream py-2.5 rounded-full text-sm uppercase tracking-widest hover:bg-gold hover:text-forest transition-colors"
+          >
+            Save Low-Stock Alert Settings
           </button>
         </form>
       </section>

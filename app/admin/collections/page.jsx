@@ -2,7 +2,20 @@
 
 import { useState } from "react";
 import { useAdminStore } from "@/store/adminStore";
+import { isSaleActive } from "@/lib/festiveSale";
 import { toast } from "@/store/toastStore";
+
+// Sale start/end are stored as plain "wall clock" strings (no timezone math — see
+// backend/routes/collections.js). These helpers just convert between that format
+// and the <input type="datetime-local"> format ("YYYY-MM-DDTHH:mm", no seconds).
+function toDatetimeLocalValue(naiveIso) {
+  if (!naiveIso) return "";
+  return naiveIso.slice(0, 16);
+}
+function fromDatetimeLocalValue(localValue) {
+  if (!localValue) return "";
+  return `${localValue.replace("T", " ")}:00`;
+}
 
 const ACCENTS = [
   { value: "gold", label: "Gold" },
@@ -19,6 +32,11 @@ const EMPTY_FORM = {
   heroVideo: "",
   accent: "gold",
   productSlugs: [],
+  discountPercent: 0,
+  couponCode: "",
+  saleStartsAt: "",
+  saleEndsAt: "",
+  bannerEnabled: false,
 };
 
 export default function AdminFestiveCollectionsPage() {
@@ -42,7 +60,11 @@ export default function AdminFestiveCollectionsPage() {
 
   function openEditForm(collection) {
     setEditingSlug(collection.slug);
-    setForm({ ...collection });
+    setForm({
+      ...collection,
+      saleStartsAt: toDatetimeLocalValue(collection.saleStartsAt),
+      saleEndsAt: toDatetimeLocalValue(collection.saleEndsAt),
+    });
     setShowForm(true);
   }
 
@@ -71,8 +93,14 @@ export default function AdminFestiveCollectionsPage() {
       toast("Please enter a collection name.", "error");
       return;
     }
+    const payload = {
+      ...form,
+      discountPercent: Number(form.discountPercent) || 0,
+      saleStartsAt: fromDatetimeLocalValue(form.saleStartsAt),
+      saleEndsAt: fromDatetimeLocalValue(form.saleEndsAt),
+    };
     if (editingSlug) {
-      updateFestiveCollection(editingSlug, form);
+      updateFestiveCollection(editingSlug, payload);
       toast(`"${form.name}" updated.`, "success");
     } else {
       const slug = (form.slug || form.name)
@@ -84,7 +112,7 @@ export default function AdminFestiveCollectionsPage() {
         toast(`A collection with slug "${slug}" already exists.`, "error");
         return;
       }
-      addFestiveCollection({ ...form, slug });
+      addFestiveCollection({ ...payload, slug });
       toast(`"${form.name}" collection created.`, "success");
     }
     closeForm();
@@ -209,6 +237,75 @@ export default function AdminFestiveCollectionsPage() {
             </div>
           </div>
 
+          <div className="border border-gold/30 bg-gold/5 rounded-xl p-5">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-serif text-lg text-forest">Festive Sale Banner</h3>
+              <label className="flex items-center gap-2 text-sm text-charcoal/70 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={form.bannerEnabled}
+                  onChange={(e) => handleChange("bannerEnabled", e.target.checked)}
+                  className="accent-forest"
+                />
+                Show on homepage
+              </label>
+            </div>
+            <p className="text-xs text-charcoal/50 mb-4">
+              Shows a countdown banner on the homepage + this collection page. This is a promotional badge
+              only — to actually discount the price at checkout, also create/enable a matching coupon code
+              under Admin → Coupons and enter it below.
+            </p>
+            <div className="grid md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs uppercase tracking-widest text-charcoal/50 mb-1.5">
+                  Discount % (shown as a badge)
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  max="99"
+                  value={form.discountPercent}
+                  onChange={(e) => handleChange("discountPercent", e.target.value)}
+                  placeholder="e.g. 20"
+                  className="w-full border border-forest/20 rounded-lg px-4 py-2.5 bg-white"
+                />
+              </div>
+              <div>
+                <label className="block text-xs uppercase tracking-widest text-charcoal/50 mb-1.5">
+                  Coupon Code (optional)
+                </label>
+                <input
+                  value={form.couponCode}
+                  onChange={(e) => handleChange("couponCode", e.target.value.toUpperCase())}
+                  placeholder="e.g. DIWALI20"
+                  className="w-full border border-forest/20 rounded-lg px-4 py-2.5 bg-white"
+                />
+              </div>
+              <div>
+                <label className="block text-xs uppercase tracking-widest text-charcoal/50 mb-1.5">
+                  Sale Starts At (optional)
+                </label>
+                <input
+                  type="datetime-local"
+                  value={form.saleStartsAt}
+                  onChange={(e) => handleChange("saleStartsAt", e.target.value)}
+                  className="w-full border border-forest/20 rounded-lg px-4 py-2.5 bg-white"
+                />
+              </div>
+              <div>
+                <label className="block text-xs uppercase tracking-widest text-charcoal/50 mb-1.5">
+                  Sale Ends At (optional — enables the countdown)
+                </label>
+                <input
+                  type="datetime-local"
+                  value={form.saleEndsAt}
+                  onChange={(e) => handleChange("saleEndsAt", e.target.value)}
+                  className="w-full border border-forest/20 rounded-lg px-4 py-2.5 bg-white"
+                />
+              </div>
+            </div>
+          </div>
+
           <div>
             <label className="block text-xs uppercase tracking-widest text-charcoal/50 mb-2">
               Products in this Collection ({form.productSlugs.length} selected)
@@ -258,6 +355,7 @@ export default function AdminFestiveCollectionsPage() {
               <th className="py-3 px-4">Slug</th>
               <th className="py-3 px-4">Accent</th>
               <th className="py-3 px-4">Products</th>
+              <th className="py-3 px-4">Sale</th>
               <th className="py-3 px-4">Actions</th>
             </tr>
           </thead>
@@ -268,6 +366,17 @@ export default function AdminFestiveCollectionsPage() {
                 <td className="py-3 px-4 text-charcoal/50">/collections/{c.slug}</td>
                 <td className="py-3 px-4 capitalize">{c.accent}</td>
                 <td className="py-3 px-4">{c.productSlugs?.length || 0}</td>
+                <td className="py-3 px-4">
+                  {isSaleActive(c) ? (
+                    <span className="bg-gold/20 text-gold text-xs font-medium px-2.5 py-1 rounded-full">
+                      Active {c.discountPercent > 0 ? `· ${c.discountPercent}% OFF` : ""}
+                    </span>
+                  ) : c.bannerEnabled ? (
+                    <span className="bg-charcoal/10 text-charcoal/60 text-xs px-2.5 py-1 rounded-full">Scheduled/Expired</span>
+                  ) : (
+                    <span className="text-charcoal/30 text-xs">—</span>
+                  )}
+                </td>
                 <td className="py-3 px-4 space-x-3">
                   <button onClick={() => openEditForm(c)} className="text-gold hover:underline">
                     Edit
@@ -280,7 +389,7 @@ export default function AdminFestiveCollectionsPage() {
             ))}
             {festiveCollections.length === 0 && (
               <tr>
-                <td colSpan={5} className="py-8 text-center text-charcoal/50">
+                <td colSpan={6} className="py-8 text-center text-charcoal/50">
                   No festive collections yet. Click "+ Add Collection" to create one.
                 </td>
               </tr>

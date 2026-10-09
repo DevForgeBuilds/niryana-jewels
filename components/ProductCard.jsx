@@ -13,7 +13,7 @@ import { StarRatingDisplay } from "./StarRating";
 
 const LOW_STOCK_THRESHOLD = 8;
 
-export default function ProductCard({ product }) {
+export default function ProductCard({ product, discountPercent = 0 }) {
   const addItem = useCartStore((s) => s.addItem);
   const isFavorite = useWishlistStore((s) => s.isFavorite(product.id));
   const toggleWishlist = useWishlistStore((s) => s.toggleItem);
@@ -62,13 +62,26 @@ export default function ProductCard({ product }) {
         )}
       </Link>
 
+      {discountPercent > 0 && (
+        <span className="absolute top-3 left-3 bg-gold text-forest text-[10px] font-semibold uppercase tracking-wide px-2.5 py-1 rounded-full z-10">
+          {discountPercent}% OFF
+        </span>
+      )}
       {typeof product.stock_quantity === "number" && product.stock_quantity > 0 && product.stock_quantity <= LOW_STOCK_THRESHOLD && (
-        <span className="absolute top-3 left-3 bg-red-600 text-white text-[10px] font-medium uppercase tracking-wide px-2.5 py-1 rounded-full z-10">
+        <span
+          className={`absolute left-3 bg-red-600 text-white text-[10px] font-medium uppercase tracking-wide px-2.5 py-1 rounded-full z-10 ${
+            discountPercent > 0 ? "top-11" : "top-3"
+          }`}
+        >
           Only {product.stock_quantity} left
         </span>
       )}
       {typeof product.stock_quantity === "number" && product.stock_quantity <= 0 && (
-        <span className="absolute top-3 left-3 bg-charcoal/80 text-white text-[10px] font-medium uppercase tracking-wide px-2.5 py-1 rounded-full z-10">
+        <span
+          className={`absolute left-3 bg-charcoal/80 text-white text-[10px] font-medium uppercase tracking-wide px-2.5 py-1 rounded-full z-10 ${
+            discountPercent > 0 ? "top-11" : "top-3"
+          }`}
+        >
           Out of Stock
         </span>
       )}

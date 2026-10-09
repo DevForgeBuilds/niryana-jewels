@@ -2,7 +2,10 @@
 
 import Link from "next/link";
 import { useAdminStore } from "@/store/adminStore";
+import { isSaleActive } from "@/lib/festiveSale";
+import { toast } from "@/store/toastStore";
 import ProductCard from "@/components/ProductCard";
+import CountdownTimer from "@/components/CountdownTimer";
 import Reveal from "@/components/Reveal";
 
 const ACCENTS = {
@@ -48,6 +51,12 @@ export default function CollectionClient({ slug }) {
 
   const products = allProducts.filter((p) => collection.productSlugs?.includes(p.slug));
   const accent = ACCENTS[collection.accent] || ACCENTS.gold;
+  const onSale = isSaleActive(collection);
+
+  function copyCode(code) {
+    navigator.clipboard?.writeText(code);
+    toast(`Coupon code "${code}" copied`, "success");
+  }
 
   return (
     <div className="pb-24">
@@ -91,6 +100,32 @@ export default function CollectionClient({ slug }) {
         </div>
       </section>
 
+      {onSale && (
+        <div className="bg-forest">
+          <div className="max-w-7xl mx-auto px-6 py-4 flex flex-col sm:flex-row items-center justify-center gap-3 text-center">
+            {collection.discountPercent > 0 && (
+              <span className="bg-gold text-forest text-xs font-semibold px-3 py-1.5 rounded-full">
+                {collection.discountPercent}% OFF
+              </span>
+            )}
+            {collection.saleEndsAt && (
+              <span className="text-cream/90 text-sm">
+                Sale ends in <CountdownTimer targetDate={collection.saleEndsAt} className="text-cream font-medium" />
+              </span>
+            )}
+            {collection.couponCode && (
+              <button
+                onClick={() => copyCode(collection.couponCode)}
+                className="text-xs text-cream/90 border border-cream/30 rounded-full px-3 py-1.5 hover:border-gold hover:text-gold transition-colors"
+                title="Click to copy"
+              >
+                Use code <span className="font-semibold">{collection.couponCode}</span> at checkout
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Products */}
       <section id="collection-products" className="max-w-7xl mx-auto px-6 pt-20">
         <Reveal className="text-center mb-14">
@@ -104,7 +139,7 @@ export default function CollectionClient({ slug }) {
         {products.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
             {products.map((p) => (
-              <ProductCard key={p.id} product={p} />
+              <ProductCard key={p.id} product={p} discountPercent={onSale ? collection.discountPercent : 0} />
             ))}
           </div>
         ) : (

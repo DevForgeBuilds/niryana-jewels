@@ -49,16 +49,24 @@ CREATE TABLE IF NOT EXISTS products (
 -- -------------------------------------------------------------------------------------
 -- FESTIVE COLLECTIONS  (Diwali / Rakhi / Wedding, admin-manageable)
 -- -------------------------------------------------------------------------------------
+-- discount_percent/coupon_code/sale_starts_at/sale_ends_at/banner_enabled power the
+-- homepage "Festive Sale" banner + live countdown (see backend/db.js ensureSchema —
+-- these columns are also added via ALTER TABLE for already-deployed databases).
 CREATE TABLE IF NOT EXISTS festive_collections (
-  id          INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  slug        VARCHAR(100)   NOT NULL UNIQUE,
-  name        VARCHAR(150)   NOT NULL,
-  tagline     VARCHAR(255),
-  description TEXT,
-  accent      VARCHAR(30)    DEFAULT 'gold',
-  hero_image  VARCHAR(1000),
-  hero_video  VARCHAR(1000),
-  created_at  TIMESTAMP      NOT NULL DEFAULT CURRENT_TIMESTAMP
+  id              INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  slug            VARCHAR(100)   NOT NULL UNIQUE,
+  name            VARCHAR(150)   NOT NULL,
+  tagline         VARCHAR(255),
+  description     TEXT,
+  accent          VARCHAR(30)    DEFAULT 'gold',
+  hero_image      VARCHAR(1000),
+  hero_video      VARCHAR(1000),
+  discount_percent TINYINT UNSIGNED NOT NULL DEFAULT 0,
+  coupon_code     VARCHAR(50)    DEFAULT NULL,
+  sale_starts_at  DATETIME       DEFAULT NULL,
+  sale_ends_at    DATETIME       DEFAULT NULL,
+  banner_enabled  BOOLEAN        NOT NULL DEFAULT FALSE,
+  created_at      TIMESTAMP      NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB;
 
 CREATE TABLE IF NOT EXISTS collection_products (
@@ -169,11 +177,14 @@ CREATE TABLE IF NOT EXISTS staff (
 -- SETTINGS  (single row, id = 1)
 -- -------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS settings (
-  id                        TINYINT UNSIGNED PRIMARY KEY DEFAULT 1,
-  gst_rate                  DECIMAL(5,2)  NOT NULL DEFAULT 3,
-  free_shipping_threshold   DECIMAL(10,2) NOT NULL DEFAULT 5000,
-  flat_shipping_rate        DECIMAL(10,2) NOT NULL DEFAULT 99,
-  cod_enabled               BOOLEAN       NOT NULL DEFAULT TRUE,
+  id                          TINYINT UNSIGNED PRIMARY KEY DEFAULT 1,
+  gst_rate                    DECIMAL(5,2)  NOT NULL DEFAULT 3,
+  free_shipping_threshold     DECIMAL(10,2) NOT NULL DEFAULT 5000,
+  flat_shipping_rate          DECIMAL(10,2) NOT NULL DEFAULT 99,
+  cod_enabled                 BOOLEAN       NOT NULL DEFAULT TRUE,
+  low_stock_threshold         INT UNSIGNED  NOT NULL DEFAULT 5,
+  alert_email                 VARCHAR(190)  DEFAULT NULL,
+  low_stock_alert_sent_date   DATE          DEFAULT NULL,
   CONSTRAINT chk_settings_single_row CHECK (id = 1)
 ) ENGINE=InnoDB;
 

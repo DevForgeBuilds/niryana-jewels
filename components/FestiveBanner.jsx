@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { useAdminStore } from "@/store/adminStore";
+import { isSaleActive } from "@/lib/festiveSale";
+import CountdownTimer from "./CountdownTimer";
 import Reveal from "./Reveal";
 
 export default function FestiveBanner() {
@@ -33,6 +35,16 @@ export default function FestiveBanner() {
                 />
               )}
               <div className="absolute inset-0 bg-gradient-to-t from-forest/80 via-forest/10 to-transparent" />
+              {isSaleActive(c) && c.discountPercent > 0 && (
+                <span className="absolute top-4 left-4 bg-gold text-forest text-xs font-semibold px-3 py-1.5 rounded-full z-10">
+                  {c.discountPercent}% OFF
+                </span>
+              )}
+              {isSaleActive(c) && c.saleEndsAt && (
+                <span className="absolute top-4 right-4 bg-black/55 backdrop-blur-sm text-white text-[11px] px-2.5 py-1 rounded-full z-10">
+                  Ends in <CountdownTimer targetDate={c.saleEndsAt} />
+                </span>
+              )}
               <div className="absolute bottom-0 left-0 right-0 p-6 text-left">
                 <p className="text-gold uppercase tracking-widest text-xs mb-2">{c.tagline}</p>
                 <h3 className="font-serif text-xl text-white">{c.name}</h3>

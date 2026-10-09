@@ -14,6 +14,7 @@ import ProductReviews from "@/components/ProductReviews";
 import RecentlyViewed from "@/components/RecentlyViewed";
 import { StarRatingDisplay } from "@/components/StarRating";
 import SizeGuideModal from "@/components/SizeGuideModal";
+import ProductLightbox from "@/components/ProductLightbox";
 import ShareButtons from "@/components/ShareButtons";
 import Reveal from "@/components/Reveal";
 import { toast } from "@/store/toastStore";
@@ -31,6 +32,7 @@ export default function ProductDetailClient() {
   const [qty, setQty] = useState(1);
   const [added, setAdded] = useState(false);
   const [showSizeGuide, setShowSizeGuide] = useState(false);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
   const [notifyEmail, setNotifyEmail] = useState("");
   const [notifyStatus, setNotifyStatus] = useState("idle"); // idle | sending | sent | error
   const addItem = useCartStore((s) => s.addItem);
@@ -156,9 +158,10 @@ export default function ProductDetailClient() {
                     alt={product.name}
                     fill
                     sizes="(max-width: 768px) 100vw, 50vw"
-                    className="object-cover pointer-events-none"
+                    className="object-cover cursor-zoom-in pointer-events-auto"
                     priority
                     draggable={false}
+                    onClick={() => setLightboxOpen(true)}
                   />
                 )}
               </motion.div>
@@ -169,6 +172,24 @@ export default function ProductDetailClient() {
                 {activeImg + 1}/{media.length}
               </span>
             )}
+
+            <button
+              onClick={() => setLightboxOpen(true)}
+              aria-label={media[activeImg].type === "video" ? "View video full-screen" : "Zoom image"}
+              className="absolute bottom-3 right-3 w-9 h-9 rounded-full bg-black/55 backdrop-blur-sm flex items-center justify-center z-10 hover:bg-black/70 transition-colors"
+            >
+              {media[activeImg].type === "video" ? (
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2">
+                  <path d="M8 5v14l11-7-11-7z" />
+                </svg>
+              ) : (
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2">
+                  <circle cx="11" cy="11" r="7" />
+                  <path d="M21 21l-4.35-4.35" strokeLinecap="round" />
+                  <path d="M11 8v6M8 11h6" strokeLinecap="round" />
+                </svg>
+              )}
+            </button>
 
             {media.length > 1 && (
               <>
@@ -257,7 +278,7 @@ export default function ProductDetailClient() {
                 <p className="text-sm text-charcoal/60">
                   Select {product.category === "rings" ? "Size" : "Size / Length"}
                 </p>
-                {product.category === "rings" && (
+                {(product.category === "rings" || product.category === "bracelets") && (
                   <button
                     type="button"
                     onClick={() => setShowSizeGuide(true)}
@@ -427,7 +448,14 @@ export default function ProductDetailClient() {
 
       <RecentlyViewed excludeId={product.id} />
 
-      <SizeGuideModal open={showSizeGuide} onClose={() => setShowSizeGuide(false)} />
+      <SizeGuideModal open={showSizeGuide} onClose={() => setShowSizeGuide(false)} category={product.category} />
+      <ProductLightbox
+        open={lightboxOpen}
+        onClose={() => setLightboxOpen(false)}
+        media={media}
+        initialIndex={activeImg}
+        productName={product.name}
+      />
     </div>
   );
 }

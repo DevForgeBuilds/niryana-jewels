@@ -228,4 +228,68 @@ async function sendNewsletterWelcomeEmail(toEmail) {
   });
 }
 
-module.exports = { sendBackInStockEmail, sendAbandonedCartReminderEmail, sendNewsletterWelcomeEmail };
+// ---------------------------------------------------------------------------
+// Low-stock / out-of-stock admin digest — one email (at most once/day, see
+// server.js cron handler) listing every product/size that has dropped below
+// the configured threshold, so the shop owner can reorder/restock in time.
+// ---------------------------------------------------------------------------
+async function sendLowStockAlertEmail(toEmail, items, threshold) {
+  const t = getTransporter();
+  if (!t) {
+    throw new Error("NODEMAILER_EMAIL/NODEMAILER_PASS not configured on this host");
+  }
+  const inventoryUrl = `${SITE_URL}/admin/inventory`;
+  const outCount = items.filter((i) => i.stock === 0).length;
+  const lowCount = items.length - outCount;
+
+  const rowsHtml = items
+    .slice(0, 25)
+    .map(
+      (i) => `
+      <tr>
+        <td style="padding:8px 0; border-bottom:1px solid #ECE4D0; color:#1F3D32; font-size:13px;">
+          ${i.name}${i.variantLabel ? ` <span style="color:#8A8A7D;">(${i.variantLabel})</span>` : ""}
+        </td>
+        <td style="padding:8px 0; border-bottom:1px solid #ECE4D0; text-align:right; font-size:13px; font-weight:bold; color:${
+          i.stock === 0 ? "#C0392B" : "#B8860B"
+        };">
+          ${i.stock === 0 ? "Out of stock" : `${i.stock} left`}
+        </td>
+      </tr>`
+    )
+    .join("");
+
+  await t.sendMail({
+    from: `"Niryana Jewels" <${process.env.NODEMAILER_EMAIL}>`,
+    to: toEmail,
+    subject: `Stock alert: ${outCount} out of stock, ${lowCount} running low`,
+    text: `${items.length} product(s) are at or below your low-stock threshold (${threshold} units). Review inventory: ${inventoryUrl}`,
+    html: wrapEmail({
+      eyebrow: "Inventory Alert",
+      title: `${items.length} item${items.length === 1 ? "" : "s"} need attention`,
+      bodyHtml: `
+        <p style="color:#5B5B52; font-size: 14px; line-height: 1.6; margin: 0 0 16px; text-align:center;">
+          These products are at or below your low-stock threshold of <strong>${threshold} units</strong>.
+        </p>
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+          ${rowsHtml}
+        </table>
+        ${
+          items.length > 25
+            ? `<p style="color:#8A8A7D; font-size:12px; margin-top:12px; text-align:center;">+ ${items.length - 25} more — see the full list in Admin → Inventory.</p>`
+            : ""
+        }
+      `,
+      ctaUrl: inventoryUrl,
+      ctaLabel: "Open Inventory",
+      footerNote: "You're receiving this because an alert email is configured in Admin → Settings. At most one of these is sent per day.",
+    }),
+  });
+}
+
+module.exports = {
+  sendBackInStockEmail,
+  sendAbandonedCartReminderEmail,
+  sendNewsletterWelcomeEmail,
+  sendLowStockAlertEmail,
+};
