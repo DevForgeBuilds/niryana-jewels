@@ -12,6 +12,7 @@ import { loadRazorpayScript } from "@/lib/razorpay";
 import Reveal from "@/components/Reveal";
 import { toast } from "@/store/toastStore";
 import { api } from "@/lib/api";
+import { isSaleActive } from "@/lib/festiveSale";
 
 const CASH_ON_DELIVERY_FEE = 49; // small COD handling fee, set to 0 if not desired
 
@@ -62,6 +63,7 @@ const PAYMENT_BADGES = [
 export default function CheckoutPage() {
   const { items, subtotal, clearCart } = useCartStore();
   const settings = useAdminStore((s) => s.settings);
+  const festiveCollections = useAdminStore((s) => s.festiveCollections);
   const findValidCoupon = useAdminStore((s) => s.findValidCoupon);
   const incrementCouponUsage = useAdminStore((s) => s.incrementCouponUsage);
   const addOrder = useAdminStore((s) => s.addOrder);
@@ -120,6 +122,17 @@ export default function CheckoutPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [form.email, form.name, form.phone, items]);
 
+  // Surface any currently-live festive sale coupon(s) right on the coupon
+  // input — otherwise a shopper who lands straight on checkout (not via the
+  // homepage banner) has no way of knowing a code even exists, let alone
+  // what it is.
+  const activeOffers = festiveCollections.filter((c) => isSaleActive(c) && c.couponCode);
+
+  function applyOfferCode(code) {
+    setCouponInput(code);
+    handleApplyCoupon(code);
+  }
+
   const sub = subtotal();
   const discount = appliedCoupon
     ? appliedCoupon.type === "percent"
@@ -146,21 +159,22 @@ export default function CheckoutPage() {
     setErrors(validateForm(form));
   }
 
-  async function handleApplyCoupon() {
+  async function handleApplyCoupon(codeOverride) {
+    const codeToApply = (codeOverride ?? couponInput).trim();
     setCouponError("");
-    if (!couponInput.trim()) return;
+    if (!codeToApply) return;
     setApplyingCoupon(true);
     try {
       // Always re-checks against the live MySQL `coupons` table (not just the
       // locally cached list) so a coupon the admin just deactivated/expired
       // can't still be applied from a stale page.
-      const coupon = await api.validateCoupon(couponInput.trim());
+      const coupon = await api.validateCoupon(codeToApply);
       setAppliedCoupon(coupon);
       toast(`Coupon "${coupon.code}" applied!`, "success");
     } catch {
       // Fall back to the local cache (e.g. if the backend is briefly unreachable)
       // so the page still degrades gracefully instead of hard-failing.
-      const cached = findValidCoupon(couponInput);
+      const cached = findValidCoupon(codeToApply);
       if (cached) {
         setAppliedCoupon(cached);
         toast(`Coupon "${cached.code}" applied!`, "success");
@@ -719,6 +733,22 @@ export default function CheckoutPage() {
                 </div>
               ) : (
                 <>
+                  {activeOffers.length > 0 && (
+                    <div className="flex flex-wrap items-center gap-2 mb-2.5">
+                      <span className="text-xs text-charcoal/50">Active offers:</span>
+                      {activeOffers.map((c) => (
+                        <button
+                          key={c.slug}
+                          type="button"
+                          onClick={() => applyOfferCode(c.couponCode)}
+                          className="text-xs bg-gold/15 text-forest border border-gold/40 rounded-full px-3 py-1 hover:bg-gold/25 transition-colors"
+                          title={`Apply ${c.couponCode} — ${c.discountPercent}% off`}
+                        >
+                          {c.couponCode} · {c.discountPercent}% off
+                        </button>
+                      ))}
+                    </div>
+                  )}
                   <div className="flex gap-2">
                     <input
                       value={couponInput}
@@ -728,7 +758,7 @@ export default function CheckoutPage() {
                     />
                     <button
                       type="button"
-                      onClick={handleApplyCoupon}
+                      onClick={() => handleApplyCoupon()}
                       disabled={applyingCoupon}
                       className="px-5 py-2.5 rounded-xl border border-forest/20 text-forest text-xs uppercase tracking-widest hover:bg-forest hover:text-cream transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
