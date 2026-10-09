@@ -1,9 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { parseIstDateTime } from "@/lib/festiveSale";
 
 function getRemaining(targetDate) {
-  const diff = new Date(targetDate).getTime() - Date.now();
+  const target = parseIstDateTime(targetDate);
+  if (!target) return null;
+  const diff = target.getTime() - Date.now();
   if (diff <= 0) return null;
   const days = Math.floor(diff / (1000 * 60 * 60 * 24));
   const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
