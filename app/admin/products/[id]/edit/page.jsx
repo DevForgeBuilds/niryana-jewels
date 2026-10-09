@@ -28,6 +28,7 @@ export default function EditProductPage() {
           stock_quantity: product.stock_quantity ?? 10,
           images: product.images?.length ? product.images : [""],
           video: product.video || "",
+          variants: product.variants?.length ? product.variants : [],
         }}
       />
     </div>

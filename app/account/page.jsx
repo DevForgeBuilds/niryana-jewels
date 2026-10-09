@@ -1,14 +1,28 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import { useSession, signIn, signOut } from "next-auth/react";
 import Reveal from "@/components/Reveal";
 import { toast } from "@/store/toastStore";
+import { api } from "@/lib/api";
+import OrderCard from "@/components/OrderCard";
 
 export default function AccountPage() {
   const [mode, setMode] = useState("login");
   const { data: session, status } = useSession();
+  const [orders, setOrders] = useState([]);
+  const [ordersLoading, setOrdersLoading] = useState(false);
+
+  useEffect(() => {
+    if (!session?.user?.email) return;
+    setOrdersLoading(true);
+    api
+      .getOrdersByContact(session.user.email)
+      .then(setOrders)
+      .catch(() => {})
+      .finally(() => setOrdersLoading(false));
+  }, [session?.user?.email]);
 
   if (status === "loading") {
     return (
@@ -20,9 +34,9 @@ export default function AccountPage() {
 
   if (session?.user) {
     return (
-      <div className="pt-28 pb-24 max-w-md mx-auto px-6">
+      <div className="pt-28 pb-24 max-w-2xl mx-auto px-6">
         <Reveal>
-          <div className="bg-white p-8 rounded-2xl shadow-sm text-center">
+          <div className="bg-white p-8 rounded-2xl shadow-sm text-center max-w-md mx-auto">
             {session.user.image ? (
               <Image
                 src={session.user.image}
@@ -66,6 +80,29 @@ export default function AccountPage() {
               Sign Out
             </button>
           </div>
+        </Reveal>
+
+        <Reveal delay={0.05} className="mt-10">
+          <h2 className="font-serif text-xl text-forest mb-4">My Orders</h2>
+          {ordersLoading ? (
+            <p className="text-charcoal/40 text-sm">Loading your orders…</p>
+          ) : orders.length === 0 ? (
+            <div className="bg-white rounded-2xl shadow-sm p-6 text-center">
+              <p className="text-charcoal/50 text-sm mb-4">You haven't placed any orders yet.</p>
+              <a
+                href="/shop"
+                className="inline-block bg-forest text-cream px-6 py-2.5 rounded-full text-xs uppercase tracking-widest hover:bg-gold hover:text-forest transition-colors"
+              >
+                Start Shopping
+              </a>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {orders.map((o) => (
+                <OrderCard key={o.id} order={o} contact={session.user.email} />
+              ))}
+            </div>
+          )}
         </Reveal>
       </div>
     );

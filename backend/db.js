@@ -76,7 +76,63 @@ async function ensureSchema() {
       ) ENGINE=InnoDB
     `);
 
-    console.log("Schema check OK (abandoned_checkouts, stock_notifications ready).");
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS newsletter_subscribers (
+        id             BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        email          VARCHAR(190) NOT NULL UNIQUE,
+        subscribed_at  TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP
+      ) ENGINE=InnoDB
+    `);
+
+    // --- Incremental column additions for the size/length variants feature ---
+    // (ALTER TABLE ... ADD COLUMN IF NOT EXISTS needs MySQL 8.0.29+/MariaDB 10.0+;
+    // guard with a try/catch so older engines just skip a column that already exists.)
+    const addColumnIfMissing = async (table, columnDef) => {
+      try {
+        await pool.query(`ALTER TABLE ${table} ADD COLUMN ${columnDef}`);
+      } catch (err) {
+        if (err.code !== "ER_DUP_FIELDNAME") throw err;
+      }
+    };
+    await addColumnIfMissing("stock_notifications", "variant_label VARCHAR(50) NOT NULL DEFAULT ''");
+
+    // The original unique key only covered (product_id, email) — now that a
+    // subscriber can wait on a specific size/length, widen it to include
+    // variant_label so they can subscribe to more than one size of the same
+    // product. Add the new key BEFORE dropping the old one, since the old key
+    // is what currently backs the fk_stock_notif_product foreign key — MySQL
+    // refuses to drop an index a FK still depends on. Safe to re-run:
+    // ER_DUP_KEYNAME / ER_CANT_DROP_FIELD_OR_KEY mean it's already applied.
+    try {
+      await pool.query(
+        "ALTER TABLE stock_notifications ADD UNIQUE KEY uq_stock_notif_product_email_variant (product_id, email, variant_label)"
+      );
+    } catch (err) {
+      if (err.code !== "ER_DUP_KEYNAME") throw err;
+    }
+    try {
+      await pool.query("ALTER TABLE stock_notifications DROP INDEX uq_stock_notif_product_email");
+    } catch (err) {
+      if (err.code !== "ER_CANT_DROP_FIELD_OR_KEY" && err.code !== "ER_CHECK_NO_SUCH_TABLE" && err.code !== "ER_KEY_DOES_NOT_EXITS" && err.code !== "ER_CANT_DROP_FIELD_OR_KEY") {
+        // Ignore "key doesn't exist" codes (naming varies by MySQL/MariaDB version); log
+        // anything else so a real failure doesn't vanish silently.
+        if (!/doesn't exist|does not exist/i.test(err.message)) console.error("Dropping old stock_notifications index failed:", err.message);
+      }
+    }
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS product_variants (
+        id              BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        product_id      BIGINT UNSIGNED NOT NULL,
+        label           VARCHAR(50)     NOT NULL,
+        stock_quantity  INT UNSIGNED    NOT NULL DEFAULT 0,
+        created_at      TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY uq_variant_product_label (product_id, label),
+        CONSTRAINT fk_variant_product FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+      ) ENGINE=InnoDB
+    `);
+
+    console.log("Schema check OK (abandoned_checkouts, stock_notifications, newsletter_subscribers, product_variants ready).");
   } catch (err) {
     console.error("ensureSchema failed:", err.message);
   }

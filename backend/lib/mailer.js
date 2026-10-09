@@ -198,4 +198,34 @@ async function sendAbandonedCartReminderEmail(toEmail, name, items, subtotal) {
   });
 }
 
-module.exports = { sendBackInStockEmail, sendAbandonedCartReminderEmail };
+// ---------------------------------------------------------------------------
+// Newsletter welcome email
+// ---------------------------------------------------------------------------
+async function sendNewsletterWelcomeEmail(toEmail) {
+  const t = getTransporter();
+  if (!t) {
+    throw new Error("NODEMAILER_EMAIL/NODEMAILER_PASS not configured on this host");
+  }
+
+  await t.sendMail({
+    from: `"Niryana Jewels" <${process.env.NODEMAILER_EMAIL}>`,
+    to: toEmail,
+    subject: "Welcome to the Niryana circle ✨",
+    text: `You're subscribed! You'll be the first to hear about new arrivals, festive collections & exclusive offers from Niryana Jewels. Shop now: ${SITE_URL}`,
+    html: wrapEmail({
+      eyebrow: "Welcome",
+      title: "You're on the list!",
+      bodyHtml: `
+        <p style="color:#5B5B52; font-size: 14px; line-height: 1.6; margin: 0; text-align:center;">
+          Thank you for joining the Niryana circle. You'll be the first to know about new arrivals,
+          festive collections, and exclusive offers — straight to your inbox.
+        </p>
+      `,
+      ctaUrl: SITE_URL,
+      ctaLabel: "Shop The Collection",
+      footerNote: "You can unsubscribe at any time by replying to a future email.",
+    }),
+  });
+}
+
+module.exports = { sendBackInStockEmail, sendAbandonedCartReminderEmail, sendNewsletterWelcomeEmail };

@@ -3,16 +3,25 @@
 import { useState } from "react";
 import Reveal from "./Reveal";
 import { toast } from "@/store/toastStore";
+import { api } from "@/lib/api";
 
 export default function Newsletter() {
   const [email, setEmail] = useState("");
   const [sent, setSent] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
-    // TODO: wire up to backend / email service (Nodemailer / Mailchimp)
-    setSent(true);
-    toast("You're subscribed! Welcome to the Niryana circle ✨", "success");
+    setSubmitting(true);
+    try {
+      await api.subscribeNewsletter(email.trim());
+      setSent(true);
+      toast("You're subscribed! Welcome to the Niryana circle ✨", "success");
+    } catch (err) {
+      toast(err.message || "Could not subscribe. Please try again.", "error");
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -39,9 +48,10 @@ export default function Newsletter() {
             />
             <button
               type="submit"
-              className="bg-forest text-cream px-8 py-3 rounded-full text-sm tracking-widest uppercase hover:bg-forest-light transition-colors duration-300"
+              disabled={submitting}
+              className="bg-forest text-cream px-8 py-3 rounded-full text-sm tracking-widest uppercase hover:bg-forest-light transition-colors duration-300 disabled:opacity-60"
             >
-              Subscribe
+              {submitting ? "Subscribing…" : "Subscribe"}
             </button>
           </form>
         )}

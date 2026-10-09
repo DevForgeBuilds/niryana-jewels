@@ -19,6 +19,7 @@ const NAV = [
   { href: "/admin/customers", label: "Customers", icon: "users" },
   { href: "/admin/reviews", label: "Reviews", icon: "star" },
   { href: "/admin/coupons", label: "Coupons", icon: "ticket" },
+  { href: "/admin/newsletter", label: "Newsletter", icon: "mail" },
   { href: "/admin/staff", label: "Staff", icon: "shield" },
   { href: "/admin/activity", label: "Activity Log", icon: "clock" },
   { href: "/admin/settings", label: "Settings", icon: "gear" },
@@ -57,6 +58,8 @@ function Icon({ name }) {
       return <svg {...common}><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>;
     case "sparkle":
       return <svg {...common}><path d="M12 2l1.8 5.6L19 9.5l-5.2 1.9L12 17l-1.8-5.6L5 9.5l5.2-1.9L12 2z"/><path d="M19 15l.8 2.4L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.6L19 15z"/></svg>;
+    case "mail":
+      return <svg {...common}><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6" strokeLinecap="round" strokeLinejoin="round"/></svg>;
     default:
       return null;
   }

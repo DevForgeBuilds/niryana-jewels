@@ -18,6 +18,7 @@ const settingsRouter = require("./routes/settings");
 const activityRouter = require("./routes/activity");
 const abandonedCartRouter = require("./routes/abandonedCart");
 const stockNotifyRouter = require("./routes/stockNotify");
+const newsletterRouter = require("./routes/newsletter");
 
 const app = express();
 app.use(express.json({ limit: "5mb" }));
@@ -73,6 +74,7 @@ app.use("/api/settings", settingsRouter);
 app.use("/api/activity", activityRouter);
 app.use("/api/abandoned-checkout", abandonedCartRouter);
 app.use("/api/notify-stock", stockNotifyRouter);
+app.use("/api/newsletter", newsletterRouter);
 
 // ---------------------------------------------------------------------------
 // POST /api/cron/send-abandoned-cart-reminders

@@ -101,6 +101,11 @@ export const useAdminStore = create((set, get) => ({
     set((state) => ({ products: state.products.map((p) => (p.id === id ? updated : p)) }));
   },
 
+  adjustVariantStock: async (id, variantId, delta) => {
+    const updated = await api.adjustVariantStock(id, variantId, delta);
+    set((state) => ({ products: state.products.map((p) => (p.id === id ? updated : p)) }));
+  },
+
   // ---------------- Orders ----------------
   // Called from the live checkout flow so a real customer order is written straight
   // into MySQL and shows up under Admin → Orders immediately — on any device/browser.

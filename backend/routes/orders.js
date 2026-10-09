@@ -38,6 +38,50 @@ router.get("/", async (_req, res) => {
   }
 });
 
+// GET /api/orders/by-contact?contact=email-or-phone
+// Powers the customer-facing "My Orders" page — matches by email OR phone so a
+// shopper who checked out as a guest with the same contact info as their later
+// Google login (or vice versa) still sees their order history.
+router.get("/by-contact", async (req, res) => {
+  try {
+    const contact = (req.query.contact || "").trim();
+    if (!contact) return res.status(400).json({ error: "contact is required" });
+    const [rows] = await pool.query(
+      "SELECT * FROM orders WHERE email = ? OR phone = ? ORDER BY created_at DESC",
+      [contact, contact]
+    );
+    res.json(rows.map(mapOrderRow));
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to fetch orders" });
+  }
+});
+
+// GET /api/orders/track?orderNumber=NJ123&contact=email-or-phone
+// Guest order tracking — requires BOTH the exact order number AND a matching
+// email/phone so a stranger can't fetch someone else's order by guessing a
+// sequential-looking order number.
+router.get("/track", async (req, res) => {
+  try {
+    const orderNumber = (req.query.orderNumber || "").trim();
+    const contact = (req.query.contact || "").trim();
+    if (!orderNumber || !contact) {
+      return res.status(400).json({ error: "orderNumber and contact are required" });
+    }
+    const [rows] = await pool.query(
+      "SELECT * FROM orders WHERE order_number = ? AND (email = ? OR phone = ?) LIMIT 1",
+      [orderNumber, contact, contact]
+    );
+    if (!rows.length) {
+      return res.status(404).json({ error: "No order found with that order number and contact info." });
+    }
+    res.json(mapOrderRow(rows[0]));
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to look up order" });
+  }
+});
+
 // GET /api/orders/:id
 router.get("/:id", async (req, res) => {
   try {
@@ -84,11 +128,38 @@ router.post("/", async (req, res) => {
       ]
     );
 
-    // Decrement stock for each purchased product.
+    // Decrement stock for each purchased product. If the line item carries a
+    // `size` (our existing cart/checkout field, reused as the variant label),
+    // and that product has size-level variants, decrement the matching variant
+    // row and recompute the product's aggregate stock_quantity from the sum of
+    // all its variants. Otherwise fall back to the simple top-level decrement.
     for (const item of b.items || []) {
-      if (item.productId) {
+      if (!item.productId) continue;
+      const qty = item.quantity || 1;
+
+      let decrementedVariant = false;
+      if (item.size) {
+        const [variantRows] = await conn.query(
+          "SELECT id FROM product_variants WHERE product_id = ? AND label = ? LIMIT 1",
+          [item.productId, String(item.size)]
+        );
+        if (variantRows.length) {
+          await conn.query("UPDATE product_variants SET stock_quantity = GREATEST(0, stock_quantity - ?) WHERE id = ?", [
+            qty,
+            variantRows[0].id,
+          ]);
+          const [sumRows] = await conn.query(
+            "SELECT COALESCE(SUM(stock_quantity), 0) AS total FROM product_variants WHERE product_id = ?",
+            [item.productId]
+          );
+          await conn.query("UPDATE products SET stock_quantity = ? WHERE id = ?", [sumRows[0].total, item.productId]);
+          decrementedVariant = true;
+        }
+      }
+
+      if (!decrementedVariant) {
         await conn.query("UPDATE products SET stock_quantity = GREATEST(0, stock_quantity - ?) WHERE id = ?", [
-          item.quantity || 1,
+          qty,
           item.productId,
         ]);
       }

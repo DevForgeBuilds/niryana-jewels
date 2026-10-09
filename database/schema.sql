@@ -210,13 +210,36 @@ CREATE TABLE IF NOT EXISTS abandoned_checkouts (
 -- STOCK NOTIFICATIONS  ("Notify me when back in stock" subscriptions)
 -- -------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS stock_notifications (
-  id          BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  product_id  BIGINT UNSIGNED NOT NULL,
-  email       VARCHAR(190)    NOT NULL,
-  created_at  TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  notified_at TIMESTAMP       NULL DEFAULT NULL,
-  UNIQUE KEY uq_stock_notif_product_email (product_id, email),
+  id            BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  product_id    BIGINT UNSIGNED NOT NULL,
+  email         VARCHAR(190)    NOT NULL,
+  variant_label VARCHAR(50)     NOT NULL DEFAULT '',
+  created_at    TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  notified_at   TIMESTAMP       NULL DEFAULT NULL,
+  UNIQUE KEY uq_stock_notif_product_email_variant (product_id, email, variant_label),
   CONSTRAINT fk_stock_notif_product FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+-- -------------------------------------------------------------------------------------
+-- NEWSLETTER SUBSCRIBERS
+-- -------------------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS newsletter_subscribers (
+  id            BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  email         VARCHAR(190) NOT NULL UNIQUE,
+  subscribed_at TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+
+-- -------------------------------------------------------------------------------------
+-- PRODUCT VARIANTS  (ring sizes / chain lengths — each with its own stock count)
+-- -------------------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS product_variants (
+  id              BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  product_id      BIGINT UNSIGNED NOT NULL,
+  label           VARCHAR(50)     NOT NULL,
+  stock_quantity  INT UNSIGNED    NOT NULL DEFAULT 0,
+  created_at      TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_variant_product_label (product_id, label),
+  CONSTRAINT fk_variant_product FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
 -- =====================================================================================

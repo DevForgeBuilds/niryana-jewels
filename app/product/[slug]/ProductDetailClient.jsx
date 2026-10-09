@@ -14,11 +14,11 @@ import ProductReviews from "@/components/ProductReviews";
 import RecentlyViewed from "@/components/RecentlyViewed";
 import { StarRatingDisplay } from "@/components/StarRating";
 import SizeGuideModal from "@/components/SizeGuideModal";
+import ShareButtons from "@/components/ShareButtons";
 import Reveal from "@/components/Reveal";
 import { toast } from "@/store/toastStore";
 import { api } from "@/lib/api";
 
-const RING_SIZES = ["12", "13", "14", "15", "16", "17", "18"];
 const LOW_STOCK_THRESHOLD = 8;
 
 export default function ProductDetailClient() {
@@ -27,7 +27,7 @@ export default function ProductDetailClient() {
   const productsLoading = useAdminStore((s) => s.loading);
   const product = PRODUCTS.find((p) => p.slug === slug);
   const [activeImg, setActiveImg] = useState(0);
-  const [size, setSize] = useState(RING_SIZES[2]);
+  const [size, setSize] = useState(null);
   const [qty, setQty] = useState(1);
   const [added, setAdded] = useState(false);
   const [showSizeGuide, setShowSizeGuide] = useState(false);
@@ -44,6 +44,24 @@ export default function ProductDetailClient() {
     if (product) addView(product.id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [product?.id]);
+
+  const hasVariants = Boolean(product?.variants && product.variants.length > 0);
+
+  // Default to the first in-stock size/length when the product (re)loads; if every
+  // size is sold out, fall back to the first one so its "Notify Me" form can show.
+  useEffect(() => {
+    if (!hasVariants) {
+      setSize(null);
+      return;
+    }
+    const inStock = product.variants.find((v) => v.stock_quantity > 0);
+    setSize((inStock || product.variants[0]).label);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [product?.id, hasVariants]);
+
+  const selectedVariant = hasVariants ? product.variants.find((v) => v.label === size) : null;
+  // Effective stock used for the add-to-cart vs notify-me decision below.
+  const effectiveStock = hasVariants ? selectedVariant?.stock_quantity ?? 0 : product?.stock_quantity;
 
   const { average, count } = useMemo(() => {
     if (!product) return { average: 0, count: 0 };
@@ -64,7 +82,7 @@ export default function ProductDetailClient() {
   }
 
   function handleAddToCart() {
-    addItem(product, qty, product.category === "rings" ? size : null);
+    addItem(product, qty, hasVariants ? size : null);
     setAdded(true);
     openCartDrawer();
     toast(`Added "${product.name}" to cart`, "success", {
@@ -81,7 +99,7 @@ export default function ProductDetailClient() {
     }
     setNotifyStatus("sending");
     try {
-      await api.notifyStock(product.id, notifyEmail.trim());
+      await api.notifyStock(product.id, notifyEmail.trim(), hasVariants ? size : undefined);
       setNotifyStatus("sent");
       toast("We'll email you when it's back in stock", "success");
     } catch {
@@ -210,10 +228,10 @@ export default function ProductDetailClient() {
             ₹{product.price.toLocaleString("en-IN")}
             <span className="text-sm text-charcoal/50 font-normal"> incl. taxes</span>
           </p>
-          {typeof product.stock_quantity === "number" && product.stock_quantity > 0 && product.stock_quantity <= LOW_STOCK_THRESHOLD && (
+          {typeof effectiveStock === "number" && effectiveStock > 0 && effectiveStock <= LOW_STOCK_THRESHOLD && (
             <p className="inline-flex items-center gap-1.5 text-xs font-medium text-red-600 bg-red-50 px-3 py-1.5 rounded-full mb-5">
               <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
-              Only {product.stock_quantity} left in stock — order soon
+              Only {effectiveStock} left{hasVariants ? ` in size ${size}` : " in stock"} — order soon
             </p>
           )}
           <p className="text-charcoal/70 leading-relaxed mb-6">{product.description}</p>
@@ -233,38 +251,54 @@ export default function ProductDetailClient() {
             </div>
           </div>
 
-          {product.category === "rings" && (
+          {hasVariants && (
             <div className="mb-6">
               <div className="flex items-center justify-between mb-2">
-                <p className="text-sm text-charcoal/60">Select Size</p>
-                <button
-                  type="button"
-                  onClick={() => setShowSizeGuide(true)}
-                  className="text-xs text-gold underline underline-offset-2 hover:text-forest transition-colors"
-                >
-                  Size Guide
-                </button>
+                <p className="text-sm text-charcoal/60">
+                  Select {product.category === "rings" ? "Size" : "Size / Length"}
+                </p>
+                {product.category === "rings" && (
+                  <button
+                    type="button"
+                    onClick={() => setShowSizeGuide(true)}
+                    className="text-xs text-gold underline underline-offset-2 hover:text-forest transition-colors"
+                  >
+                    Size Guide
+                  </button>
+                )}
               </div>
               <div className="flex flex-wrap gap-2">
-                {RING_SIZES.map((s) => (
-                  <button
-                    key={s}
-                    onClick={() => setSize(s)}
-                    className={`w-10 h-10 rounded-full border text-sm ${
-                      size === s
-                        ? "bg-forest text-cream border-forest"
-                        : "border-forest/30 text-forest"
-                    }`}
-                  >
-                    {s}
-                  </button>
-                ))}
+                {product.variants.map((v) => {
+                  const outOfStock = v.stock_quantity <= 0;
+                  return (
+                    <button
+                      key={v.label}
+                      onClick={() => {
+                        setSize(v.label);
+                        if (notifyStatus !== "idle") setNotifyStatus("idle");
+                      }}
+                      title={outOfStock ? `${v.label} — out of stock` : v.label}
+                      className={`min-w-10 h-10 px-3 rounded-full border text-sm transition-colors ${
+                        size === v.label
+                          ? "bg-forest text-cream border-forest"
+                          : outOfStock
+                          ? "border-forest/15 text-charcoal/30 line-through"
+                          : "border-forest/30 text-forest"
+                      }`}
+                    >
+                      {v.label}
+                    </button>
+                  );
+                })}
               </div>
+              {selectedVariant && selectedVariant.stock_quantity <= 0 && (
+                <p className="text-xs text-red-500 mt-2">This size is currently out of stock.</p>
+              )}
             </div>
           )}
 
           <div className="flex items-center gap-4 mb-2">
-            {typeof product.stock_quantity === "number" && product.stock_quantity <= 0 ? (
+            {typeof effectiveStock === "number" && effectiveStock <= 0 ? (
               <form onSubmit={handleNotifyMe} className="flex-1 flex flex-col sm:flex-row gap-2">
                 {notifyStatus === "sent" ? (
                   <p className="flex-1 flex items-center gap-2 text-sm text-forest bg-cream-soft rounded-full px-5 py-3">
@@ -366,9 +400,13 @@ export default function ProductDetailClient() {
               </motion.svg>
             </motion.button>
           </div>
-          <p className="text-xs text-charcoal/50 mb-6">
+          <p className="text-xs text-charcoal/50 mb-4">
             {isFavorite ? "Saved to your wishlist" : "Tap the heart to save this piece for later"}
           </p>
+          <ShareButtons
+            title={product.name}
+            url={typeof window !== "undefined" ? window.location.href : `https://niryana-jewels-iota.vercel.app/product/${product.slug}`}
+          />
         </Reveal>
       </div>
 

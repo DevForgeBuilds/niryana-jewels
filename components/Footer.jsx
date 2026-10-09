@@ -10,7 +10,7 @@ export default function Footer() {
   if (pathname?.startsWith("/admin")) return null;
 
   return (
-    <footer className="bg-forest text-cream pt-16 pb-8">
+    <footer className="bg-forest text-cream pt-16 pb-8 print:hidden">
       <div className="max-w-7xl mx-auto px-6 grid md:grid-cols-4 gap-10">
         <div>
           <Image
@@ -58,6 +58,7 @@ export default function Footer() {
             <li><Link href="/faq" className="hover:text-gold">FAQ</Link></li>
             <li><Link href="/contact" className="hover:text-gold">Contact</Link></li>
             <li><Link href="/account" className="hover:text-gold">My Account</Link></li>
+            <li><Link href="/track-order" className="hover:text-gold">Track Order</Link></li>
             <li><Link href="/cart" className="hover:text-gold">Cart</Link></li>
           </ul>
           <h4 className="text-gold uppercase tracking-widest text-xs mb-4 mt-6">Legal</h4>

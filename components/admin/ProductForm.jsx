@@ -34,10 +34,14 @@ const EMPTY = {
   stock_quantity: 10,
   images: [""],
   video: "",
+  variants: [],
 };
 
 export default function ProductForm({ initial, productId }) {
   const [form, setForm] = useState(initial ? { ...EMPTY, ...initial } : EMPTY);
+  // Full per-size/length inventory tracking: when on, `form.variants` (an array of
+  // {label, stock_quantity}) drives stock instead of the single stock_quantity field.
+  const [useVariants, setUseVariants] = useState(Boolean(initial?.variants?.length));
   const addProduct = useAdminStore((s) => s.addProduct);
   const updateProduct = useAdminStore((s) => s.updateProduct);
   const categoriesRaw = useAdminStore((s) => s.categories);
@@ -57,6 +61,22 @@ export default function ProductForm({ initial, productId }) {
 
   function addImageField() {
     setForm((f) => ({ ...f, images: [...f.images, ""] }));
+  }
+
+  function handleVariantChange(idx, field, value) {
+    setForm((f) => {
+      const variants = [...f.variants];
+      variants[idx] = { ...variants[idx], [field]: value };
+      return { ...f, variants };
+    });
+  }
+
+  function addVariantRow() {
+    setForm((f) => ({ ...f, variants: [...f.variants, { label: "", stock_quantity: 0 }] }));
+  }
+
+  function removeVariantRow(idx) {
+    setForm((f) => ({ ...f, variants: f.variants.filter((_, i) => i !== idx) }));
   }
 
   const [saving, setSaving] = useState(false);
@@ -95,11 +115,23 @@ export default function ProductForm({ initial, productId }) {
 
   async function handleSubmit(e) {
     e.preventDefault();
+    const cleanedVariants = form.variants
+      .map((v) => ({ label: String(v.label || "").trim(), stock_quantity: Number(v.stock_quantity) || 0 }))
+      .filter((v) => v.label);
+
+    if (useVariants && !cleanedVariants.length) {
+      toast("Add at least one size/length with a label before saving.", "error");
+      return;
+    }
+
     const payload = {
       ...form,
       price: Number(form.price),
       stock_quantity: Number(form.stock_quantity),
       images: form.images.filter(Boolean),
+      // Sending an empty array (vs omitting the field) tells the backend to clear
+      // any existing variants and fall back to the plain stock_quantity above.
+      variants: useVariants ? cleanedVariants : [],
     };
     setSaving(true);
     try {
@@ -187,11 +219,71 @@ export default function ProductForm({ initial, productId }) {
           <label className="text-xs uppercase tracking-widest text-charcoal/50">Stock Quantity</label>
           <input
             type="number"
-            value={form.stock_quantity}
+            disabled={useVariants}
+            value={useVariants ? form.variants.reduce((sum, v) => sum + (Number(v.stock_quantity) || 0), 0) : form.stock_quantity}
             onChange={(e) => handleChange("stock_quantity", e.target.value)}
-            className="w-full border border-forest/20 rounded-lg px-4 py-2.5 mt-1"
+            className="w-full border border-forest/20 rounded-lg px-4 py-2.5 mt-1 disabled:bg-cream-soft disabled:text-charcoal/50"
           />
+          {useVariants && <p className="text-xs text-charcoal/40 mt-1">Auto-calculated from sizes below.</p>}
         </div>
+      </div>
+
+      <div className="border border-forest/15 rounded-lg p-4">
+        <label className="flex items-center gap-2 cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={useVariants}
+            onChange={(e) => {
+              const checked = e.target.checked;
+              setUseVariants(checked);
+              if (checked && form.variants.length === 0) {
+                setForm((f) => ({ ...f, variants: [{ label: "", stock_quantity: 0 }] }));
+              }
+            }}
+            className="w-4 h-4 accent-forest"
+          />
+          <span className="text-sm text-forest font-medium">
+            This product comes in multiple sizes / lengths (e.g. ring sizes, chain lengths)
+          </span>
+        </label>
+
+        {useVariants && (
+          <div className="mt-4 space-y-2">
+            <div className="grid grid-cols-[1fr_1fr_auto] gap-2 text-xs uppercase tracking-widest text-charcoal/50">
+              <span>Size / Length Label</span>
+              <span>Stock Quantity</span>
+              <span />
+            </div>
+            {form.variants.map((v, i) => (
+              <div key={i} className="grid grid-cols-[1fr_1fr_auto] gap-2">
+                <input
+                  value={v.label}
+                  onChange={(e) => handleVariantChange(i, "label", e.target.value)}
+                  placeholder="e.g. 16 or 18 inch"
+                  className="border border-forest/20 rounded-lg px-3 py-2 text-sm"
+                />
+                <input
+                  type="number"
+                  min="0"
+                  value={v.stock_quantity}
+                  onChange={(e) => handleVariantChange(i, "stock_quantity", e.target.value)}
+                  className="border border-forest/20 rounded-lg px-3 py-2 text-sm"
+                />
+                <button
+                  type="button"
+                  onClick={() => removeVariantRow(i)}
+                  title="Remove this size"
+                  className="text-red-400 hover:text-red-600 px-2"
+                >
+                  ✕
+                </button>
+              </div>
+            ))}
+            <button type="button" onClick={addVariantRow} className="text-xs text-gold hover:underline">
+              + Add another size
+            </button>
+          </div>
+        )}
       </div>
 
       <div>
