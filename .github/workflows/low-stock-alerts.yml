@@ -1,0 +1,19 @@
+name: Send low-stock alert email
+
+# Daily "cron" for the low-stock alert feature — pings a secret-protected backend
+# endpoint once a day. The endpoint itself also guards against sending more than
+# once per calendar day, so re-runs/manual triggers are always safe.
+on:
+  schedule:
+    - cron: "30 3 * * *" # ~09:00 IST every day
+  workflow_dispatch: {}
+
+jobs:
+  send-low-stock-alert:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call backend low-stock alert endpoint
+        run: |
+          curl -sf -X POST "https://niryana-jewels-c19o.onrender.com/api/cron/send-low-stock-alerts" \
+            -H "x-cron-secret: ${{ secrets.CRON_SECRET }}" \
+            --max-time 120

@@ -1,0 +1,22 @@
+name: Send abandoned-cart reminder emails
+
+# This repo's backend (Express on Render) has no built-in scheduler, so this
+# workflow is the "cron" for the abandoned-cart feature: every 30 minutes it
+# pings a secret-protected backend endpoint that finds carts abandoned for
+# 60+ minutes and emails a one-time reminder to each. Render's free plan can
+# also spin the service down after inactivity — this ping doubles as a
+# periodic wake-up call for it.
+on:
+  schedule:
+    - cron: "*/30 * * * *"
+  workflow_dispatch: {}
+
+jobs:
+  send-reminders:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call backend reminder endpoint
+        run: |
+          curl -sf -X POST "https://niryana-jewels-c19o.onrender.com/api/cron/send-abandoned-cart-reminders" \
+            -H "x-cron-secret: ${{ secrets.CRON_SECRET }}" \
+            --max-time 120
