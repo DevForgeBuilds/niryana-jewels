@@ -5,6 +5,7 @@
 // Requires NODEMAILER_EMAIL / NODEMAILER_PASS env vars on the backend host (Render).
 // =====================================================================================
 const nodemailer = require("nodemailer");
+const { generateInvoicePdfBuffer } = require("./generateInvoicePdf");
 
 let transporter = null;
 
@@ -287,9 +288,73 @@ async function sendLowStockAlertEmail(toEmail, items, threshold) {
   });
 }
 
+// ---------------------------------------------------------------------------
+// Order invoice — sent automatically right when a new order is placed
+// (see routes/orders.js POST /). Carries the real letterhead-branded invoice
+// PDF as an attachment, so the customer gets their bill in their inbox
+// without having to visit the site — it's also still viewable/downloadable
+// any time from "My Orders" on the storefront and from the Admin order page.
+// ---------------------------------------------------------------------------
+async function sendOrderInvoiceEmail(order) {
+  const t = getTransporter();
+  if (!t) {
+    throw new Error("NODEMAILER_EMAIL/NODEMAILER_PASS not configured on this host");
+  }
+  const firstName = (order.customerName || "").split(" ")[0] || "there";
+  const pdfBuffer = await generateInvoicePdfBuffer(order);
+
+  const itemsHtml = (order.items || [])
+    .map(
+      (i) => `
+      <tr>
+        <td style="padding:8px 0; border-bottom:1px solid #ECE4D0; color:#1F3D32; font-size:13px;">
+          ${i.name}${i.size ? ` <span style="color:#8A8A7D;">(Size ${i.size})</span>` : ""} &times; ${i.quantity}
+        </td>
+        <td style="padding:8px 0; border-bottom:1px solid #ECE4D0; text-align:right; font-size:13px; color:#1F3D32;">
+          ₹${Number((i.price || 0) * (i.quantity || 1)).toLocaleString("en-IN")}
+        </td>
+      </tr>`
+    )
+    .join("");
+
+  await t.sendMail({
+    from: `"Niryana Jewels" <${process.env.NODEMAILER_EMAIL}>`,
+    to: order.email,
+    subject: `Your Niryana Jewels invoice — Order #${order.orderNumber}`,
+    text: `Hi ${firstName}, thank you for your order #${order.orderNumber}! Your invoice is attached as a PDF. Order total: ₹${Number(order.total || 0).toLocaleString("en-IN")}.`,
+    html: wrapEmail({
+      eyebrow: "Order Confirmed",
+      title: `Thank you, ${firstName}!`,
+      bodyHtml: `
+        <p style="color:#5B5B52; font-size: 14px; line-height: 1.6; margin: 0 0 20px; text-align:center;">
+          Your order <strong>#${order.orderNumber}</strong> has been placed successfully. Your official invoice
+          is attached to this email as a PDF.
+        </p>
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 10px;">
+          ${itemsHtml}
+        </table>
+        <p style="color:#1F3D32; font-size: 16px; margin: 16px 0 0; text-align:center; font-weight:bold;">
+          Total Paid: ₹${Number(order.total || 0).toLocaleString("en-IN")}
+        </p>
+      `,
+      ctaUrl: `${SITE_URL}/orders/${order.orderNumber}?contact=${encodeURIComponent(order.email || order.phone || "")}`,
+      ctaLabel: "Track Your Order",
+      footerNote: "Keep this email for your records — the attached PDF is your official tax invoice.",
+    }),
+    attachments: [
+      {
+        filename: `Invoice-${order.orderNumber}.pdf`,
+        content: pdfBuffer,
+        contentType: "application/pdf",
+      },
+    ],
+  });
+}
+
 module.exports = {
   sendBackInStockEmail,
   sendAbandonedCartReminderEmail,
   sendNewsletterWelcomeEmail,
   sendLowStockAlertEmail,
+  sendOrderInvoiceEmail,
 };

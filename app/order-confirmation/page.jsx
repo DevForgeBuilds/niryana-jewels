@@ -3,27 +3,11 @@
 import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { useState } from "react";
 import { useLastOrderStore } from "@/store/lastOrderStore";
 import Reveal from "@/components/Reveal";
-import { downloadInvoicePdf } from "@/lib/generateInvoicePdf";
 
 export default function OrderConfirmationPage() {
   const order = useLastOrderStore((s) => s.order);
-  const [invoiceLoading, setInvoiceLoading] = useState(false);
-
-  async function handleDownloadInvoice() {
-    if (!order || invoiceLoading) return;
-    setInvoiceLoading(true);
-    try {
-      await downloadInvoicePdf(order);
-    } catch (err) {
-      console.error(err);
-      alert("Could not generate the invoice PDF. Please try again.");
-    } finally {
-      setInvoiceLoading(false);
-    }
-  }
 
   if (!order) {
     return (
@@ -72,6 +56,11 @@ export default function OrderConfirmationPage() {
         <p className="text-charcoal/60">
           Your order <span className="text-forest font-medium">#{order.orderNumber}</span> has been placed successfully.
         </p>
+        {order.form?.email && (
+          <p className="text-charcoal/50 text-sm mt-2">
+            Your invoice has been emailed to <span className="text-forest">{order.form.email}</span>.
+          </p>
+        )}
       </Reveal>
 
       <Reveal delay={0.1} className="bg-cream-soft rounded-2xl p-6 md:p-8 mb-8 grid grid-cols-1 sm:grid-cols-2 gap-6">
@@ -149,13 +138,6 @@ export default function OrderConfirmationPage() {
       </Reveal>
 
       <Reveal delay={0.2} className="text-center flex flex-col sm:flex-row gap-3 justify-center flex-wrap">
-        <button
-          onClick={handleDownloadInvoice}
-          disabled={invoiceLoading}
-          className="bg-gold text-forest px-6 py-3 rounded-full text-sm uppercase tracking-widest hover:bg-forest hover:text-cream transition-colors duration-300 disabled:opacity-60"
-        >
-          {invoiceLoading ? "Preparing…" : "Download Invoice (PDF)"}
-        </button>
         <Link
           href="/shop"
           className="bg-forest text-cream px-6 py-3 rounded-full text-sm uppercase tracking-widest hover:bg-gold hover:text-forest transition-colors duration-300"

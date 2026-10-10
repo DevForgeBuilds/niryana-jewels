@@ -1,6 +1,7 @@
 const express = require("express");
 const { pool } = require("../db");
 const { parseJSONField, logActivity } = require("../lib/helpers");
+const { sendOrderInvoiceEmail } = require("../lib/mailer");
 
 const router = express.Router();
 
@@ -191,7 +192,18 @@ router.post("/", async (req, res) => {
     await conn.commit();
 
     const [rows] = await pool.query("SELECT * FROM orders WHERE order_number = ?", [b.orderNumber]);
-    res.status(201).json(mapOrderRow(rows[0]));
+    const newOrder = mapOrderRow(rows[0]);
+    res.status(201).json(newOrder);
+
+    // Email the letterhead-branded invoice to the customer right away. Fired
+    // after the response is sent (and wrapped in try/catch) so a slow or
+    // failing email never delays or breaks checkout for the customer.
+    if (newOrder.email) {
+      sendOrderInvoiceEmail(newOrder).catch((err) => {
+        console.error(`Failed to email invoice for order ${newOrder.orderNumber}:`, err);
+      });
+    }
+    return;
   } catch (err) {
     await conn.rollback();
     console.error(err);
