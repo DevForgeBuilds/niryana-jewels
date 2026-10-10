@@ -57,7 +57,7 @@ app.get("/health", (_req, res) => {
   res.json({
     status: "ok",
     razorpayConfigured: Boolean(keyId && keySecret),
-    nodemailerConfigured: Boolean(process.env.NODEMAILER_EMAIL && process.env.NODEMAILER_PASS),
+    emailRelayConfigured: Boolean(process.env.INTERNAL_EMAIL_SECRET),
   });
 });
 

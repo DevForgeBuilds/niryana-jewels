@@ -1,29 +1,39 @@
 // =====================================================================================
-// Transactional email sending (back-in-stock alerts, abandoned-cart reminders) via
-// Gmail/nodemailer — same approach as the frontend's lib/mailer.js (OTP/reset emails),
-// but living on the Express backend since that's where cart + stock state is tracked.
-// Requires NODEMAILER_EMAIL / NODEMAILER_PASS env vars on the backend host (Render).
+// Transactional email sending (order invoices, back-in-stock alerts, abandoned-cart
+// reminders, newsletter welcome, low-stock digest).
+//
+// IMPORTANT: Render's free web service plan blocks outbound traffic to SMTP ports
+// (25/465/587) as of Sept 2025 (https://render.com/changelog/free-web-services-will-no-
+// longer-allow-outbound-traffic-to-smtp-ports), so this backend can no longer talk to
+// Gmail SMTP directly — every send here used to time out silently. Instead, every email
+// below is built as HTML/text (+ optional base64 attachments) and POSTed to an internal
+// relay endpoint on the Next.js app (app/api/internal/relay-email/route.js), which runs
+// on Vercel (not subject to that block) and already has working NODEMAILER_EMAIL /
+// NODEMAILER_PASS credentials (same ones used for the admin OTP emails there).
+// Protected by INTERNAL_EMAIL_SECRET, which must match on both Vercel and Render.
 // =====================================================================================
-const nodemailer = require("nodemailer");
 const { generateInvoicePdfBuffer } = require("./generateInvoicePdf");
-
-let transporter = null;
-
-function getTransporter() {
-  if (transporter) return transporter;
-  if (!process.env.NODEMAILER_EMAIL || !process.env.NODEMAILER_PASS) return null;
-  transporter = nodemailer.createTransport({
-    service: "gmail",
-    auth: {
-      user: process.env.NODEMAILER_EMAIL,
-      pass: process.env.NODEMAILER_PASS,
-    },
-  });
-  return transporter;
-}
 
 const SITE_URL = (process.env.SITE_URL || "https://niryana-jewels-iota.vercel.app").replace(/\/$/, "");
 const LOGO_URL = `${SITE_URL}/logo/niryana-logo-light.png`;
+
+async function relayEmail({ to, subject, text, html, attachments }) {
+  if (!process.env.INTERNAL_EMAIL_SECRET) {
+    throw new Error("INTERNAL_EMAIL_SECRET not configured on this host");
+  }
+  const res = await fetch(`${SITE_URL}/api/internal/relay-email`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-internal-secret": process.env.INTERNAL_EMAIL_SECRET,
+    },
+    body: JSON.stringify({ to, subject, text, html, attachments }),
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body.error || `Email relay failed with status ${res.status}`);
+  }
+}
 
 function wrapEmail({ eyebrow, title, bodyHtml, ctaUrl, ctaLabel, footerNote }) {
   return `
@@ -103,18 +113,10 @@ function wrapEmail({ eyebrow, title, bodyHtml, ctaUrl, ctaLabel, footerNote }) {
 // Back-in-stock notification
 // ---------------------------------------------------------------------------
 async function sendBackInStockEmail(toEmail, product) {
-  const t = getTransporter();
-  if (!t) {
-    // Throw (rather than silently return) so the caller does NOT mark this
-    // subscriber as "notified" — if NODEMAILER_EMAIL/PASS get misconfigured,
-    // we want the next restock/cron pass to retry instead of losing it forever.
-    throw new Error("NODEMAILER_EMAIL/NODEMAILER_PASS not configured on this host");
-  }
   const productUrl = `${SITE_URL}/product/${product.slug}`;
   const image = Array.isArray(product.images) && product.images[0] ? product.images[0] : null;
 
-  await t.sendMail({
-    from: `"Niryana Jewels" <${process.env.NODEMAILER_EMAIL}>`,
+  await relayEmail({
     to: toEmail,
     subject: `Good news — "${product.name}" is back in stock!`,
     text: `"${product.name}" is back in stock at Niryana Jewels. Shop it now before it sells out again: ${productUrl}`,
@@ -145,10 +147,6 @@ async function sendBackInStockEmail(toEmail, product) {
 // Abandoned cart reminder
 // ---------------------------------------------------------------------------
 async function sendAbandonedCartReminderEmail(toEmail, name, items, subtotal) {
-  const t = getTransporter();
-  if (!t) {
-    throw new Error("NODEMAILER_EMAIL/NODEMAILER_PASS not configured on this host");
-  }
   const cartUrl = `${SITE_URL}/cart`;
   const firstName = (name || "").split(" ")[0] || "there";
 
@@ -173,8 +171,7 @@ async function sendAbandonedCartReminderEmail(toEmail, name, items, subtotal) {
     )
     .join("");
 
-  await t.sendMail({
-    from: `"Niryana Jewels" <${process.env.NODEMAILER_EMAIL}>`,
+  await relayEmail({
     to: toEmail,
     subject: `You left something beautiful behind, ${firstName} ✨`,
     text: `Hi ${firstName}, you left items in your Niryana Jewels cart. Complete your order: ${cartUrl}`,
@@ -203,13 +200,7 @@ async function sendAbandonedCartReminderEmail(toEmail, name, items, subtotal) {
 // Newsletter welcome email
 // ---------------------------------------------------------------------------
 async function sendNewsletterWelcomeEmail(toEmail) {
-  const t = getTransporter();
-  if (!t) {
-    throw new Error("NODEMAILER_EMAIL/NODEMAILER_PASS not configured on this host");
-  }
-
-  await t.sendMail({
-    from: `"Niryana Jewels" <${process.env.NODEMAILER_EMAIL}>`,
+  await relayEmail({
     to: toEmail,
     subject: "Welcome to the Niryana circle ✨",
     text: `You're subscribed! You'll be the first to hear about new arrivals, festive collections & exclusive offers from Niryana Jewels. Shop now: ${SITE_URL}`,
@@ -235,10 +226,6 @@ async function sendNewsletterWelcomeEmail(toEmail) {
 // the configured threshold, so the shop owner can reorder/restock in time.
 // ---------------------------------------------------------------------------
 async function sendLowStockAlertEmail(toEmail, items, threshold) {
-  const t = getTransporter();
-  if (!t) {
-    throw new Error("NODEMAILER_EMAIL/NODEMAILER_PASS not configured on this host");
-  }
   const inventoryUrl = `${SITE_URL}/admin/inventory`;
   const outCount = items.filter((i) => i.stock === 0).length;
   const lowCount = items.length - outCount;
@@ -260,8 +247,7 @@ async function sendLowStockAlertEmail(toEmail, items, threshold) {
     )
     .join("");
 
-  await t.sendMail({
-    from: `"Niryana Jewels" <${process.env.NODEMAILER_EMAIL}>`,
+  await relayEmail({
     to: toEmail,
     subject: `Stock alert: ${outCount} out of stock, ${lowCount} running low`,
     text: `${items.length} product(s) are at or below your low-stock threshold (${threshold} units). Review inventory: ${inventoryUrl}`,
@@ -296,10 +282,6 @@ async function sendLowStockAlertEmail(toEmail, items, threshold) {
 // any time from "My Orders" on the storefront and from the Admin order page.
 // ---------------------------------------------------------------------------
 async function sendOrderInvoiceEmail(order) {
-  const t = getTransporter();
-  if (!t) {
-    throw new Error("NODEMAILER_EMAIL/NODEMAILER_PASS not configured on this host");
-  }
   const firstName = (order.customerName || "").split(" ")[0] || "there";
   const pdfBuffer = await generateInvoicePdfBuffer(order);
 
@@ -317,8 +299,7 @@ async function sendOrderInvoiceEmail(order) {
     )
     .join("");
 
-  await t.sendMail({
-    from: `"Niryana Jewels" <${process.env.NODEMAILER_EMAIL}>`,
+  await relayEmail({
     to: order.email,
     subject: `Your Niryana Jewels invoice — Order #${order.orderNumber}`,
     text: `Hi ${firstName}, thank you for your order #${order.orderNumber}! Your invoice is attached as a PDF. Order total: ₹${Number(order.total || 0).toLocaleString("en-IN")}.`,
@@ -344,7 +325,7 @@ async function sendOrderInvoiceEmail(order) {
     attachments: [
       {
         filename: `Invoice-${order.orderNumber}.pdf`,
-        content: pdfBuffer,
+        contentBase64: pdfBuffer.toString("base64"),
         contentType: "application/pdf",
       },
     ],
