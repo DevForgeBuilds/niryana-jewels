@@ -1,9 +1,11 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
+import { useState } from "react";
 import Image from "next/image";
 import { useAdminStore } from "@/store/adminStore";
 import { LOGO_URL } from "@/data/mediaManifest";
+import { downloadInvoicePdf } from "@/lib/generateInvoicePdf";
 
 const STATUSES = ["pending", "processing", "shipped", "delivered", "cancelled"];
 
@@ -12,9 +14,23 @@ export default function OrderDetailPage() {
   const router = useRouter();
   const order = useAdminStore((s) => s.getOrderById(id));
   const updateOrderStatus = useAdminStore((s) => s.updateOrderStatus);
+  const [invoiceLoading, setInvoiceLoading] = useState(false);
 
   if (!order) {
     return <p className="text-charcoal/60">Order not found.</p>;
+  }
+
+  async function handleDownloadInvoice() {
+    if (invoiceLoading) return;
+    setInvoiceLoading(true);
+    try {
+      await downloadInvoicePdf(order);
+    } catch (err) {
+      console.error(err);
+      alert("Could not generate the invoice PDF. Please try again.");
+    } finally {
+      setInvoiceLoading(false);
+    }
   }
 
   return (
@@ -33,6 +49,13 @@ export default function OrderDetailPage() {
               <option key={s} value={s}>{s}</option>
             ))}
           </select>
+          <button
+            onClick={handleDownloadInvoice}
+            disabled={invoiceLoading}
+            className="bg-gold text-forest px-5 py-2 rounded-full text-sm uppercase tracking-widest hover:bg-forest hover:text-cream transition-colors disabled:opacity-60"
+          >
+            {invoiceLoading ? "Preparing…" : "Download Invoice (PDF)"}
+          </button>
           <button
             onClick={() => window.print()}
             className="bg-forest text-cream px-5 py-2 rounded-full text-sm uppercase tracking-widest hover:bg-gold hover:text-forest transition-colors"

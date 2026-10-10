@@ -6,6 +6,7 @@ import Image from "next/image";
 import { api } from "@/lib/api";
 import { LOGO_URL } from "@/data/mediaManifest";
 import OrderStatusStepper from "@/components/OrderStatusStepper";
+import { downloadInvoicePdf } from "@/lib/generateInvoicePdf";
 
 export default function CustomerInvoicePage() {
   const { orderNumber } = useParams();
@@ -16,6 +17,20 @@ export default function CustomerInvoicePage() {
   const [order, setOrder] = useState(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [invoiceLoading, setInvoiceLoading] = useState(false);
+
+  async function handleDownloadInvoice() {
+    if (!order || invoiceLoading) return;
+    setInvoiceLoading(true);
+    try {
+      await downloadInvoicePdf(order);
+    } catch (err) {
+      console.error(err);
+      setError("Could not generate the invoice PDF. Please try again.");
+    } finally {
+      setInvoiceLoading(false);
+    }
+  }
 
   async function lookup(c) {
     if (!c.trim()) return;
@@ -72,7 +87,14 @@ export default function CustomerInvoicePage() {
 
   return (
     <div className="pt-28 pb-24 max-w-3xl mx-auto px-6">
-      <div className="flex items-center justify-end mb-6 print:hidden">
+      <div className="flex items-center justify-end gap-3 mb-6 print:hidden">
+        <button
+          onClick={handleDownloadInvoice}
+          disabled={invoiceLoading}
+          className="bg-gold text-forest px-5 py-2 rounded-full text-sm uppercase tracking-widest hover:bg-forest hover:text-cream transition-colors disabled:opacity-60"
+        >
+          {invoiceLoading ? "Preparing…" : "Download Invoice (PDF)"}
+        </button>
         <button
           onClick={() => window.print()}
           className="bg-forest text-cream px-5 py-2 rounded-full text-sm uppercase tracking-widest hover:bg-gold hover:text-forest transition-colors"

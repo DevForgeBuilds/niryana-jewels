@@ -3,11 +3,27 @@
 import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
+import { useState } from "react";
 import { useLastOrderStore } from "@/store/lastOrderStore";
 import Reveal from "@/components/Reveal";
+import { downloadInvoicePdf } from "@/lib/generateInvoicePdf";
 
 export default function OrderConfirmationPage() {
   const order = useLastOrderStore((s) => s.order);
+  const [invoiceLoading, setInvoiceLoading] = useState(false);
+
+  async function handleDownloadInvoice() {
+    if (!order || invoiceLoading) return;
+    setInvoiceLoading(true);
+    try {
+      await downloadInvoicePdf(order);
+    } catch (err) {
+      console.error(err);
+      alert("Could not generate the invoice PDF. Please try again.");
+    } finally {
+      setInvoiceLoading(false);
+    }
+  }
 
   if (!order) {
     return (
@@ -132,7 +148,14 @@ export default function OrderConfirmationPage() {
         </div>
       </Reveal>
 
-      <Reveal delay={0.2} className="text-center flex flex-col sm:flex-row gap-3 justify-center">
+      <Reveal delay={0.2} className="text-center flex flex-col sm:flex-row gap-3 justify-center flex-wrap">
+        <button
+          onClick={handleDownloadInvoice}
+          disabled={invoiceLoading}
+          className="bg-gold text-forest px-6 py-3 rounded-full text-sm uppercase tracking-widest hover:bg-forest hover:text-cream transition-colors duration-300 disabled:opacity-60"
+        >
+          {invoiceLoading ? "Preparing…" : "Download Invoice (PDF)"}
+        </button>
         <Link
           href="/shop"
           className="bg-forest text-cream px-6 py-3 rounded-full text-sm uppercase tracking-widest hover:bg-gold hover:text-forest transition-colors duration-300"
