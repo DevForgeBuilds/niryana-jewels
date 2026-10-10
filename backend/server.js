@@ -54,7 +54,43 @@ app.get("/", (_req, res) => {
 });
 
 app.get("/health", (_req, res) => {
-  res.json({ status: "ok", razorpayConfigured: Boolean(keyId && keySecret) });
+  res.json({
+    status: "ok",
+    razorpayConfigured: Boolean(keyId && keySecret),
+    nodemailerConfigured: Boolean(process.env.NODEMAILER_EMAIL && process.env.NODEMAILER_PASS),
+  });
+});
+
+// TEMPORARY diagnostic endpoint — sends a dummy invoice email and reports the
+// exact success/error back in the HTTP response (so it can be debugged
+// without access to Render's log dashboard). Remove once the real invoice
+// email flow is confirmed working.
+app.post("/api/debug/test-invoice-email", async (req, res) => {
+  try {
+    const { sendOrderInvoiceEmail } = require("./lib/mailer");
+    const toEmail = req.body?.email;
+    if (!toEmail) return res.status(400).json({ error: "email is required in the request body" });
+    await sendOrderInvoiceEmail({
+      orderNumber: "NJ-DEBUG-TEST",
+      createdAt: new Date().toISOString().slice(0, 10),
+      status: "pending",
+      customerName: "Debug Test",
+      phone: "9999999999",
+      email: toEmail,
+      address: "Debug Address, Surat",
+      items: [{ name: "Debug Item", quantity: 1, price: 100 }],
+      subtotal: 100,
+      discount: 0,
+      gst: 3,
+      codFee: 0,
+      total: 103,
+      paymentMethod: "cod",
+    });
+    res.json({ ok: true, message: `Test invoice email sent to ${toEmail}` });
+  } catch (err) {
+    console.error("test-invoice-email failed:", err);
+    res.status(500).json({ ok: false, error: err.message, stack: err.stack });
+  }
 });
 
 // ---------------------------------------------------------------------------
