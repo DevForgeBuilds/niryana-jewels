@@ -85,7 +85,7 @@ export default function WatchAndShop() {
 
   const clips = useMemo(() => {
     return products
-      .filter((p) => p.video && p.is_active !== false)
+      .filter((p) => p.video && p.is_active !== false && p.show_in_watch_shop !== false)
       .sort((a, b) => b.id - a.id)
       .slice(0, MAX_CLIPS)
       .map((p) => ({ slug: p.slug, name: p.name, price: p.price, video: p.video }));

@@ -34,6 +34,7 @@ const EMPTY = {
   stock_quantity: 10,
   images: [""],
   video: "",
+  show_in_watch_shop: true,
   variants: [],
 };
 
@@ -373,6 +374,18 @@ export default function ProductForm({ initial, productId }) {
             {uploadingVideo ? "Uploading…" : "Upload"}
           </button>
         </div>
+
+        {form.video && (
+          <label className="flex items-center gap-2 mt-3 text-sm text-forest cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={form.show_in_watch_shop !== false}
+              onChange={(e) => handleChange("show_in_watch_shop", e.target.checked)}
+              className="w-4 h-4 accent-gold"
+            />
+            Show this video in the homepage &quot;Watch &amp; Shop&quot; section
+          </label>
+        )}
       </div>
 
       <div className="flex gap-3 pt-2">

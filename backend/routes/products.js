@@ -18,6 +18,7 @@ function mapProductRow(row) {
     description: row.description,
     images: parseJSONField(row.images, []),
     video: row.video,
+    show_in_watch_shop: row.show_in_watch_shop === undefined ? true : Boolean(row.show_in_watch_shop),
     occasions: parseJSONField(row.occasions, []),
     stock_quantity: row.stock_quantity,
     is_active: Boolean(row.is_active),
@@ -117,8 +118,8 @@ router.post("/", async (req, res) => {
     const slug = slugify(b.name);
     const [result] = await conn.query(
       `INSERT INTO products
-        (slug, name, category_id, price, metal, stone, certification, description, images, video, occasions, stock_quantity)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        (slug, name, category_id, price, metal, stone, certification, description, images, video, show_in_watch_shop, occasions, stock_quantity)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         slug,
         b.name,
@@ -130,6 +131,7 @@ router.post("/", async (req, res) => {
         b.description || null,
         JSON.stringify(b.images || []),
         b.video || null,
+        b.show_in_watch_shop === false ? 0 : 1,
         JSON.stringify(b.occasions || []),
         hasVariants ? 0 : b.stock_quantity || 0,
       ]
@@ -186,11 +188,11 @@ router.put("/:id", async (req, res) => {
       fields.push("category_id = ?");
       values.push(catRows[0].id);
     }
-    const simpleFields = ["name", "price", "metal", "stone", "certification", "description", "video", "is_active"];
+    const simpleFields = ["name", "price", "metal", "stone", "certification", "description", "video", "is_active", "show_in_watch_shop"];
     for (const f of simpleFields) {
       if (b[f] !== undefined) {
         fields.push(`${f} = ?`);
-        values.push(b[f]);
+        values.push(typeof b[f] === "boolean" ? (b[f] ? 1 : 0) : b[f]);
       }
     }
     if (b.images !== undefined) {

@@ -96,6 +96,12 @@ async function ensureSchema() {
     };
     await addColumnIfMissing("stock_notifications", "variant_label VARCHAR(50) NOT NULL DEFAULT ''");
 
+    // Lets Admin → Products opt a specific product's video OUT of the
+    // homepage "Watch & Shop" row even if a video URL is set — defaults to 1
+    // (shown) so every product that already has a video keeps appearing
+    // exactly as before once this column is added.
+    await addColumnIfMissing("products", "show_in_watch_shop TINYINT(1) NOT NULL DEFAULT 1");
+
     // The original unique key only covered (product_id, email) — now that a
     // subscriber can wait on a specific size/length, widen it to include
     // variant_label so they can subscribe to more than one size of the same
