@@ -7,13 +7,19 @@ import { useAdminStore } from "@/store/adminStore";
 import Reveal from "@/components/Reveal";
 import { toast } from "@/store/toastStore";
 import FreeShippingBar from "@/components/FreeShippingBar";
+import BundleDiscountBanner from "@/components/BundleDiscountBanner";
+import { computeBundleDiscount, bundleDiscountAmount } from "@/lib/bundleDiscount";
 
 export default function CartPage() {
   const { items, removeItem, restoreItem, updateQuantity, subtotal } = useCartStore();
-  const gstRate = useAdminStore((s) => s.settings.gstRate);
+  const settings = useAdminStore((s) => s.settings);
+  const gstRate = settings.gstRate;
   const sub = subtotal();
-  const gst = Math.round(sub * (gstRate / 100));
-  const total = sub + gst;
+  const bundle = computeBundleDiscount(items, settings);
+  const bundleDiscount = bundleDiscountAmount(sub, bundle);
+  const discountedSub = sub - bundleDiscount;
+  const gst = Math.round(discountedSub * (gstRate / 100));
+  const total = discountedSub + gst;
 
   function handleRemove(item) {
     removeItem(item.productId, item.size);
@@ -81,10 +87,17 @@ export default function CartPage() {
         <div className="bg-cream-soft rounded-xl p-6 h-fit">
           <h2 className="font-serif text-xl text-forest mb-4">Order Summary</h2>
           <FreeShippingBar subtotal={sub} />
+          <BundleDiscountBanner items={items} />
           <div className="flex justify-between text-sm mb-2">
             <span>Subtotal</span>
             <span>₹{sub.toLocaleString("en-IN")}</span>
           </div>
+          {bundleDiscount > 0 && (
+            <div className="flex justify-between text-sm mb-2 text-gold font-medium">
+              <span>Bundle Discount ({bundle.percent}%)</span>
+              <span>−₹{bundleDiscount.toLocaleString("en-IN")}</span>
+            </div>
+          )}
           <div className="flex justify-between text-sm mb-4">
             <span>GST ({gstRate}%)</span>
             <span>₹{gst.toLocaleString("en-IN")}</span>

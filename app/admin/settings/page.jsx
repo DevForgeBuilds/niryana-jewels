@@ -53,6 +53,20 @@ export default function SettingsPage() {
     }
   }
 
+  async function handleBundleSave(e) {
+    e.preventDefault();
+    try {
+      await updateSettings({
+        bundleDiscountEnabled: shipForm.bundleDiscountEnabled,
+        bundleMinItems: Number(shipForm.bundleMinItems),
+        bundleDiscountPercent: Number(shipForm.bundleDiscountPercent),
+      });
+      toast("Bundle discount settings saved.", "success");
+    } catch (err) {
+      toast(`Failed to save settings: ${err.message}`, "error");
+    }
+  }
+
   function handlePasswordChange(e) {
     e.preventDefault();
     // The admin login credentials (email + password) now live server-side only, in
@@ -220,6 +234,53 @@ export default function SettingsPage() {
             className="sm:col-span-2 bg-forest text-cream py-2.5 rounded-full text-sm uppercase tracking-widest hover:bg-gold hover:text-forest transition-colors"
           >
             Save Analytics &amp; Ads Tracking
+          </button>
+        </form>
+      </section>
+
+      <section className="bg-white rounded-xl shadow-sm p-6">
+        <h2 className="font-serif text-xl text-forest mb-1">Bundle Discount</h2>
+        <p className="text-xs text-charcoal/40 mb-4">
+          Automatically gives shoppers an extra discount once their cart reaches a minimum number of
+          items — no coupon code needed. Applied live in the cart and at checkout, on top of any coupon,
+          to encourage larger orders.
+        </p>
+        <form onSubmit={handleBundleSave} className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-2xl">
+          <label className="sm:col-span-3 flex items-center gap-2 text-sm text-charcoal/70">
+            <input
+              type="checkbox"
+              checked={shipForm.bundleDiscountEnabled || false}
+              onChange={(e) => setShipForm({ ...shipForm, bundleDiscountEnabled: e.target.checked })}
+            />
+            Enable bundle discount
+          </label>
+          <div>
+            <label className="text-xs uppercase tracking-widest text-charcoal/50">Minimum Items</label>
+            <input
+              type="number"
+              min="2"
+              value={shipForm.bundleMinItems ?? 2}
+              onChange={(e) => setShipForm({ ...shipForm, bundleMinItems: e.target.value })}
+              className="w-full border border-forest/20 rounded-lg px-4 py-2.5 mt-1"
+            />
+          </div>
+          <div>
+            <label className="text-xs uppercase tracking-widest text-charcoal/50">Discount (%)</label>
+            <input
+              type="number"
+              min="0"
+              max="100"
+              step="0.5"
+              value={shipForm.bundleDiscountPercent ?? 5}
+              onChange={(e) => setShipForm({ ...shipForm, bundleDiscountPercent: e.target.value })}
+              className="w-full border border-forest/20 rounded-lg px-4 py-2.5 mt-1"
+            />
+          </div>
+          <button
+            type="submit"
+            className="sm:col-span-3 bg-forest text-cream py-2.5 rounded-full text-sm uppercase tracking-widest hover:bg-gold hover:text-forest transition-colors"
+          >
+            Save Bundle Discount
           </button>
         </form>
       </section>

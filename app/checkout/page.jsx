@@ -10,6 +10,8 @@ import { useAdminStore } from "@/store/adminStore";
 import { useLastOrderStore } from "@/store/lastOrderStore";
 import { loadRazorpayScript } from "@/lib/razorpay";
 import Reveal from "@/components/Reveal";
+import BundleDiscountBanner from "@/components/BundleDiscountBanner";
+import { computeBundleDiscount, bundleDiscountAmount } from "@/lib/bundleDiscount";
 import { toast } from "@/store/toastStore";
 import { api } from "@/lib/api";
 
@@ -134,11 +136,14 @@ export default function CheckoutPage() {
   }
 
   const sub = subtotal();
-  const discount = appliedCoupon
+  const couponDiscount = appliedCoupon
     ? appliedCoupon.type === "percent"
       ? Math.round(sub * (appliedCoupon.value / 100))
       : Math.min(appliedCoupon.value, sub)
     : 0;
+  const bundle = computeBundleDiscount(items, settings);
+  const bundleDiscount = bundleDiscountAmount(sub, bundle);
+  const discount = Math.min(sub, couponDiscount + bundleDiscount);
   const discountedSub = sub - discount;
   const gst = Math.round(discountedSub * (gstRate / 100));
   const codFee = paymentMethod === "cod" ? CASH_ON_DELIVERY_FEE : 0;
@@ -309,6 +314,8 @@ export default function CheckoutPage() {
       giftNote,
       subtotal: sub,
       discount,
+      couponDiscount,
+      bundleDiscount,
       couponCode: appliedCoupon?.code || null,
       gst,
       codFee,
@@ -773,15 +780,23 @@ export default function CheckoutPage() {
               )}
             </div>
 
+            <BundleDiscountBanner items={items} />
+
             <div className="space-y-2 text-sm border-t border-forest/10 pt-4">
               <div className="flex justify-between text-charcoal/70">
                 <span>Subtotal</span>
                 <span>₹{sub.toLocaleString("en-IN")}</span>
               </div>
-              {discount > 0 && (
+              {couponDiscount > 0 && appliedCoupon && (
                 <div className="flex justify-between text-gold font-medium">
                   <span>Discount ({appliedCoupon.code})</span>
-                  <span>−₹{discount.toLocaleString("en-IN")}</span>
+                  <span>−₹{couponDiscount.toLocaleString("en-IN")}</span>
+                </div>
+              )}
+              {bundleDiscount > 0 && (
+                <div className="flex justify-between text-gold font-medium">
+                  <span>Bundle Discount ({bundle.percent}%)</span>
+                  <span>−₹{bundleDiscount.toLocaleString("en-IN")}</span>
                 </div>
               )}
               <div className="flex justify-between text-charcoal/70">

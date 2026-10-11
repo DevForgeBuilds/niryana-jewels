@@ -151,6 +151,14 @@ async function ensureSchema() {
     await addColumnIfMissing("settings", "ga4_measurement_id VARCHAR(32) DEFAULT NULL");
     await addColumnIfMissing("settings", "meta_pixel_id VARCHAR(32) DEFAULT NULL");
 
+    // --- Bundle discount (automatic "buy N+ items, get X% off" incentive to
+    // raise average order value). Admin-configurable from Settings; applied
+    // automatically in cart/checkout once the cart's total item quantity
+    // reaches bundle_min_items — no coupon code needed. ---
+    await addColumnIfMissing("settings", "bundle_discount_enabled BOOLEAN NOT NULL DEFAULT FALSE");
+    await addColumnIfMissing("settings", "bundle_min_items TINYINT UNSIGNED NOT NULL DEFAULT 2");
+    await addColumnIfMissing("settings", "bundle_discount_percent DECIMAL(5,2) NOT NULL DEFAULT 5");
+
     console.log(
       "Schema check OK (abandoned_checkouts, stock_notifications, newsletter_subscribers, product_variants, festive sale fields, low-stock alert fields ready)."
     );

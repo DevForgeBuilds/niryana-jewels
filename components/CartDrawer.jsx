@@ -5,8 +5,10 @@ import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { useCartStore } from "@/store/cartStore";
 import { useCartDrawerStore } from "@/store/cartDrawerStore";
+import { useAdminStore } from "@/store/adminStore";
 import { toast } from "@/store/toastStore";
 import FreeShippingBar from "@/components/FreeShippingBar";
+import BundleDiscountBanner from "@/components/BundleDiscountBanner";
 
 export default function CartDrawer() {
   const { items, removeItem, restoreItem, subtotal } = useCartStore();
@@ -105,6 +107,7 @@ export default function CartDrawer() {
 
                 <div className="px-6 py-5 border-t border-forest/10 bg-white">
                   <FreeShippingBar subtotal={sub} />
+                  <BundleDiscountBanner items={items} />
                   <div className="flex justify-between text-forest font-medium mb-4">
                     <span>Subtotal</span>
                     <span>₹{sub.toLocaleString("en-IN")}</span>

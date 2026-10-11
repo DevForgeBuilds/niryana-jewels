@@ -14,6 +14,9 @@ function mapRow(row) {
     alertEmail: row.alert_email || "",
     ga4MeasurementId: row.ga4_measurement_id || "",
     metaPixelId: row.meta_pixel_id || "",
+    bundleDiscountEnabled: Boolean(row.bundle_discount_enabled),
+    bundleMinItems: Number(row.bundle_min_items ?? 2),
+    bundleDiscountPercent: Number(row.bundle_discount_percent ?? 5),
   };
 }
 
@@ -46,6 +49,9 @@ router.put("/", async (req, res) => {
       alertEmail: "alert_email",
       ga4MeasurementId: "ga4_measurement_id",
       metaPixelId: "meta_pixel_id",
+      bundleDiscountEnabled: "bundle_discount_enabled",
+      bundleMinItems: "bundle_min_items",
+      bundleDiscountPercent: "bundle_discount_percent",
     };
     const nullIfEmpty = new Set(["alertEmail", "ga4MeasurementId", "metaPixelId"]);
     for (const [key, col] of Object.entries(map)) {

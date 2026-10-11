@@ -156,7 +156,19 @@ export default function OrderConfirmationPage() {
             <span>Subtotal</span>
             <span>₹{order.subtotal.toLocaleString("en-IN")}</span>
           </div>
-          {order.discount > 0 && (
+          {order.couponDiscount > 0 && (
+            <div className="flex justify-between text-gold font-medium">
+              <span>Discount {order.couponCode ? `(${order.couponCode})` : ""}</span>
+              <span>−₹{order.couponDiscount.toLocaleString("en-IN")}</span>
+            </div>
+          )}
+          {order.bundleDiscount > 0 && (
+            <div className="flex justify-between text-gold font-medium">
+              <span>Bundle Discount</span>
+              <span>−₹{order.bundleDiscount.toLocaleString("en-IN")}</span>
+            </div>
+          )}
+          {!order.couponDiscount && !order.bundleDiscount && order.discount > 0 && (
             <div className="flex justify-between text-gold font-medium">
               <span>Discount {order.couponCode ? `(${order.couponCode})` : ""}</span>
               <span>−₹{order.discount.toLocaleString("en-IN")}</span>
