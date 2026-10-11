@@ -7,6 +7,7 @@ import { toast } from "@/store/toastStore";
 export default function SettingsPage() {
   const settings = useAdminStore((s) => s.settings);
   const updateSettings = useAdminStore((s) => s.updateSettings);
+  const coupons = useAdminStore((s) => s.coupons);
   const [pw, setPw] = useState({ current: "", next: "" });
   const [shipForm, setShipForm] = useState(settings);
 
@@ -62,6 +63,20 @@ export default function SettingsPage() {
         bundleDiscountPercent: Number(shipForm.bundleDiscountPercent),
       });
       toast("Bundle discount settings saved.", "success");
+    } catch (err) {
+      toast(`Failed to save settings: ${err.message}`, "error");
+    }
+  }
+
+  async function handleWelcomePopupSave(e) {
+    e.preventDefault();
+    try {
+      await updateSettings({
+        welcomePopupEnabled: shipForm.welcomePopupEnabled,
+        welcomePopupCouponCode: shipForm.welcomePopupCouponCode,
+        welcomePopupDelaySeconds: Number(shipForm.welcomePopupDelaySeconds),
+      });
+      toast("Welcome offer popup settings saved.", "success");
     } catch (err) {
       toast(`Failed to save settings: ${err.message}`, "error");
     }
@@ -281,6 +296,62 @@ export default function SettingsPage() {
             className="sm:col-span-3 bg-forest text-cream py-2.5 rounded-full text-sm uppercase tracking-widest hover:bg-gold hover:text-forest transition-colors"
           >
             Save Bundle Discount
+          </button>
+        </form>
+      </section>
+
+      <section className="bg-white rounded-xl shadow-sm p-6">
+        <h2 className="font-serif text-xl text-forest mb-1">Welcome Offer Popup</h2>
+        <p className="text-xs text-charcoal/40 mb-4">
+          Shown once per first-time visitor a few seconds after they land, offering a coupon code to
+          copy. It always mirrors a real coupon from Coupons — if that coupon is turned off or deleted,
+          the popup automatically stops showing, so it can never promise a discount that doesn't work.
+        </p>
+        <form onSubmit={handleWelcomePopupSave} className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-2xl">
+          <label className="sm:col-span-3 flex items-center gap-2 text-sm text-charcoal/70">
+            <input
+              type="checkbox"
+              checked={shipForm.welcomePopupEnabled ?? true}
+              onChange={(e) => setShipForm({ ...shipForm, welcomePopupEnabled: e.target.checked })}
+            />
+            Enable welcome offer popup
+          </label>
+          <div className="sm:col-span-2">
+            <label className="text-xs uppercase tracking-widest text-charcoal/50">Coupon to advertise</label>
+            <select
+              value={shipForm.welcomePopupCouponCode || "WELCOME10"}
+              onChange={(e) => setShipForm({ ...shipForm, welcomePopupCouponCode: e.target.value })}
+              className="w-full border border-forest/20 rounded-lg px-4 py-2.5 mt-1"
+            >
+              {!coupons.some((c) => c.code === (shipForm.welcomePopupCouponCode || "WELCOME10")) && (
+                <option value={shipForm.welcomePopupCouponCode || "WELCOME10"}>
+                  {shipForm.welcomePopupCouponCode || "WELCOME10"} (not found — create it under Coupons)
+                </option>
+              )}
+              {coupons.map((c) => (
+                <option key={c.id} value={c.code}>
+                  {c.code} — {c.type === "percent" ? `${c.value}%` : `₹${c.value}`} off
+                  {c.active ? "" : " (inactive)"}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="text-xs uppercase tracking-widest text-charcoal/50">Delay (seconds)</label>
+            <input
+              type="number"
+              min="0"
+              max="60"
+              value={shipForm.welcomePopupDelaySeconds ?? 6}
+              onChange={(e) => setShipForm({ ...shipForm, welcomePopupDelaySeconds: e.target.value })}
+              className="w-full border border-forest/20 rounded-lg px-4 py-2.5 mt-1"
+            />
+          </div>
+          <button
+            type="submit"
+            className="sm:col-span-3 bg-forest text-cream py-2.5 rounded-full text-sm uppercase tracking-widest hover:bg-gold hover:text-forest transition-colors"
+          >
+            Save Welcome Offer Popup
           </button>
         </form>
       </section>

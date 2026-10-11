@@ -6,28 +6,33 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useAdminStore } from "@/store/adminStore";
 
 const STORAGE_KEY = "niryana-welcome-offer-seen";
-const SHOW_DELAY_MS = 6000;
-const COUPON_CODE = "WELCOME10";
 
 // Shown once per visitor (localStorage-gated) a few seconds after they land,
 // to capture first-time buyers who might otherwise bounce without ordering.
-// Reuses the real WELCOME10 coupon that already works at checkout — no new
-// coupon or backend change needed.
+// Fully admin-configurable from Admin -> Settings -> Welcome Offer Popup
+// (enable/disable, delay, which coupon to advertise). It always mirrors a
+// real, active coupon from the Coupons list — no separate discount value is
+// stored here, so it can never promise a discount that doesn't actually work
+// at checkout.
 export default function WelcomeOfferPopup() {
   const pathname = usePathname();
   const [visible, setVisible] = useState(false);
   const [copied, setCopied] = useState(false);
   const coupons = useAdminStore((s) => s.coupons);
-  const coupon = coupons.find((c) => c.code === COUPON_CODE && c.active);
+  const settings = useAdminStore((s) => s.settings);
+  const couponCode = settings.welcomePopupCouponCode || "WELCOME10";
+  const delayMs = Math.max(0, Number(settings.welcomePopupDelaySeconds ?? 6)) * 1000;
+  const coupon = coupons.find((c) => c.code === couponCode && c.active);
   const isAdminRoute = pathname?.startsWith("/admin");
+  const enabled = settings.welcomePopupEnabled !== false;
 
   useEffect(() => {
-    if (typeof window === "undefined" || isAdminRoute) return;
+    if (typeof window === "undefined" || isAdminRoute || !enabled) return;
     if (localStorage.getItem(STORAGE_KEY)) return;
 
-    const timer = setTimeout(() => setVisible(true), SHOW_DELAY_MS);
+    const timer = setTimeout(() => setVisible(true), delayMs);
     return () => clearTimeout(timer);
-  }, [isAdminRoute]);
+  }, [isAdminRoute, enabled, delayMs]);
 
   function dismiss() {
     setVisible(false);
@@ -35,15 +40,15 @@ export default function WelcomeOfferPopup() {
   }
 
   function handleCopy() {
-    navigator.clipboard?.writeText(COUPON_CODE).catch(() => {});
+    navigator.clipboard?.writeText(couponCode).catch(() => {});
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   }
 
-  // Don't show at all if the coupon isn't active in the live system — avoids
-  // promising a discount that won't actually apply at checkout. Also never
-  // show inside the admin panel.
-  if (!coupon || isAdminRoute) return null;
+  // Don't show at all if disabled in Settings, or the coupon isn't active in
+  // the live system — avoids promising a discount that won't actually apply
+  // at checkout. Also never show inside the admin panel.
+  if (!enabled || !coupon || isAdminRoute) return null;
 
   return (
     <AnimatePresence>
@@ -79,7 +84,7 @@ export default function WelcomeOfferPopup() {
               onClick={handleCopy}
               className="w-full border-2 border-dashed border-gold rounded-xl py-3 text-forest font-serif text-lg tracking-widest hover:bg-gold/10 transition-colors"
             >
-              {copied ? "Copied!" : COUPON_CODE}
+              {copied ? "Copied!" : couponCode}
             </button>
             <p className="text-[11px] text-charcoal/40 mt-3">Tap the code to copy it</p>
           </motion.div>

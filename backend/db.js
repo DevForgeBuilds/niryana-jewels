@@ -159,6 +159,16 @@ async function ensureSchema() {
     await addColumnIfMissing("settings", "bundle_min_items TINYINT UNSIGNED NOT NULL DEFAULT 2");
     await addColumnIfMissing("settings", "bundle_discount_percent DECIMAL(5,2) NOT NULL DEFAULT 5");
 
+    // --- First-time-visitor welcome offer popup. Admin-configurable from
+    // Settings: can be switched off entirely, the delay before it appears can
+    // be tuned, and which existing coupon code it advertises can be picked
+    // from the real Coupons list (so the % shown and whether it actually
+    // works at checkout always come from that one real coupon — no duplicate
+    // discount value to keep in sync). ---
+    await addColumnIfMissing("settings", "welcome_popup_enabled BOOLEAN NOT NULL DEFAULT TRUE");
+    await addColumnIfMissing("settings", "welcome_popup_coupon_code VARCHAR(50) NOT NULL DEFAULT 'WELCOME10'");
+    await addColumnIfMissing("settings", "welcome_popup_delay_seconds TINYINT UNSIGNED NOT NULL DEFAULT 6");
+
     console.log(
       "Schema check OK (abandoned_checkouts, stock_notifications, newsletter_subscribers, product_variants, festive sale fields, low-stock alert fields ready)."
     );
