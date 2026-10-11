@@ -1,51 +1,18 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import Reveal from "./Reveal";
-import { ASSETS } from "@/data/mediaManifest";
+import { useAdminStore } from "@/store/adminStore";
 
-// Curated reel-style product videos — plays muted/looped while in view, like a
-// scrollable Instagram Reels strip, but each card is directly shoppable.
-const CLIPS = [
-  {
-    slug: "9kt-gold-heart-ring",
-    name: "9KT Gold Heart Ring",
-    price: 18500,
-    video: ASSETS.ninekGoldRingReel,
-  },
-  {
-    slug: "dual-tone-cuff-bracelet",
-    name: "Dual Tone Cuff Bracelet",
-    price: 8999,
-    video: ASSETS.braceletDualReel,
-  },
-  {
-    slug: "legacy-layered-necklace",
-    name: "Legacy Layered Necklace Set",
-    price: 38999,
-    video: ASSETS.genericReel,
-  },
-  {
-    slug: "mahadev-protection-pendant",
-    name: "Mahadev Protection Pendant",
-    price: 5499,
-    video: ASSETS.mahadevProtectionReel,
-  },
-  {
-    slug: "dainty-heart-pendant",
-    name: "Dainty Heart Pendant",
-    price: 3999,
-    video: ASSETS.heartPendantReel,
-  },
-  {
-    slug: "hare-krishna-silver-pendant",
-    name: "Hare Krishna Silver Pendant",
-    price: 3499,
-    video: ASSETS.hareKrishnaSilverReel,
-  },
-];
+// Pulls directly from the live catalog (same store the Shop page and Admin
+// Dashboard use) — any product that has a video set in Admin → Products
+// automatically shows up here, in the most-recently-added order. Removing a
+// product's video (or the product itself) removes it from this row too, so
+// the section is fully admin-managed without needing a separate screen.
+const MAX_CLIPS = 8;
+
 
 function VideoCard({ clip, delay }) {
   const videoRef = useRef(null);
@@ -113,6 +80,21 @@ function VideoCard({ clip, delay }) {
 }
 
 export default function WatchAndShop() {
+  const products = useAdminStore((s) => s.products);
+  const loading = useAdminStore((s) => s.loading);
+
+  const clips = useMemo(() => {
+    return products
+      .filter((p) => p.video && p.is_active !== false)
+      .sort((a, b) => b.id - a.id)
+      .slice(0, MAX_CLIPS)
+      .map((p) => ({ slug: p.slug, name: p.name, price: p.price, video: p.video }));
+  }, [products]);
+
+  // Nothing to show yet (still loading, or no product currently has a video) —
+  // render nothing rather than an empty/broken-looking section.
+  if (!loading && clips.length === 0) return null;
+
   return (
     <section className="max-w-7xl mx-auto px-6 py-24 md:py-32">
       <Reveal className="text-center mb-12">
@@ -124,10 +106,16 @@ export default function WatchAndShop() {
       </Reveal>
 
       <div className="flex gap-5 overflow-x-auto pb-4 snap-x snap-mandatory scrollbar-hide -mx-6 px-6">
-        {CLIPS.map((clip, idx) => (
-          <VideoCard key={clip.slug} clip={clip} delay={idx * 0.06} />
-        ))}
+        {loading
+          ? Array.from({ length: 4 }).map((_, i) => (
+              <div
+                key={i}
+                className="shrink-0 w-[220px] sm:w-[240px] aspect-[9/16] rounded-2xl bg-forest/10 animate-pulse"
+              />
+            ))
+          : clips.map((clip, idx) => <VideoCard key={clip.slug} clip={clip} delay={idx * 0.06} />)}
       </div>
     </section>
   );
 }
+
