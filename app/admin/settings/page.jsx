@@ -303,10 +303,9 @@ export default function SettingsPage() {
       <section className="bg-white rounded-xl shadow-sm p-6">
         <h2 className="font-serif text-xl text-forest mb-1">Welcome Offer Popup</h2>
         <p className="text-xs text-charcoal/40 mb-4">
-          Shown a few seconds after landing, on every visit — the visitor enters their email to
-          unlock the coupon code (the email is saved to Newsletter subscribers). It always mirrors a
-          real coupon from Coupons — if that coupon is turned off or deleted, the popup automatically
-          stops showing, so it can never promise a discount that doesn't work.
+          Shown once per first-time visitor a few seconds after they land, offering a coupon code to
+          copy. It always mirrors a real coupon from Coupons — if that coupon is turned off or deleted,
+          the popup automatically stops showing, so it can never promise a discount that doesn't work.
         </p>
         <form onSubmit={handleWelcomePopupSave} className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-2xl">
           <label className="sm:col-span-3 flex items-center gap-2 text-sm text-charcoal/70">
