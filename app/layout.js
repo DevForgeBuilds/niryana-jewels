@@ -8,6 +8,7 @@ import WhatsAppButton from "@/components/WhatsAppButton";
 import AuthProvider from "@/components/AuthProvider";
 import AdminDataProvider from "@/components/AdminDataProvider";
 import AnalyticsScripts from "@/components/AnalyticsScripts";
+import WelcomeOfferPopup from "@/components/WelcomeOfferPopup";
 
 // Self-hosted, non-render-blocking fonts (replaces the old Google Fonts CSS @import
 // for a faster first paint and no extra network round-trip).
@@ -75,6 +76,7 @@ export default function RootLayout({ children }) {
           <Footer />
           <CartDrawer />
           <WhatsAppButton />
+          <WelcomeOfferPopup />
           <ToastContainer />
         </AuthProvider>
       </body>

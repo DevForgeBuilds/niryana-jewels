@@ -16,6 +16,8 @@ import { StarRatingDisplay } from "@/components/StarRating";
 import SizeGuideModal from "@/components/SizeGuideModal";
 import ProductLightbox from "@/components/ProductLightbox";
 import ShareButtons from "@/components/ShareButtons";
+import TrustBadges from "@/components/TrustBadges";
+import useBestsellerIds from "@/hooks/useBestsellerIds";
 import Reveal from "@/components/Reveal";
 import { toast } from "@/store/toastStore";
 import { api } from "@/lib/api";
@@ -41,6 +43,7 @@ export default function ProductDetailClient() {
   const openCartDrawer = useCartDrawerStore((s) => s.open);
   const addView = useRecentlyViewedStore((s) => s.addView);
   const allReviews = useAdminStore((s) => s.reviews);
+  const bestsellerIds = useBestsellerIds();
 
   useEffect(() => {
     if (product) addView(product.id);
@@ -239,6 +242,11 @@ export default function ProductDetailClient() {
           <p className="text-gold uppercase tracking-widest text-xs mb-2">
             {product.category}
           </p>
+          {bestsellerIds.has(product.id) && (
+            <span className="inline-flex items-center gap-1 bg-forest text-cream text-[10px] font-semibold uppercase tracking-wide px-2.5 py-1 rounded-full mb-2">
+              ★ Bestseller
+            </span>
+          )}
           <h1 className="font-serif text-3xl md:text-4xl text-forest mb-3">{product.name}</h1>
           {count > 0 && (
             <div className="mb-3">
@@ -424,6 +432,7 @@ export default function ProductDetailClient() {
           <p className="text-xs text-charcoal/50 mb-4">
             {isFavorite ? "Saved to your wishlist" : "Tap the heart to save this piece for later"}
           </p>
+          <TrustBadges />
           <ShareButtons
             title={product.name}
             url={typeof window !== "undefined" ? window.location.href : `https://niryana-jewels-iota.vercel.app/product/${product.slug}`}

@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useCartStore } from "@/store/cartStore";
 import { useCartDrawerStore } from "@/store/cartDrawerStore";
 import { toast } from "@/store/toastStore";
+import FreeShippingBar from "@/components/FreeShippingBar";
 
 export default function CartDrawer() {
   const { items, removeItem, restoreItem, subtotal } = useCartStore();
@@ -103,6 +104,7 @@ export default function CartDrawer() {
                 </div>
 
                 <div className="px-6 py-5 border-t border-forest/10 bg-white">
+                  <FreeShippingBar subtotal={sub} />
                   <div className="flex justify-between text-forest font-medium mb-4">
                     <span>Subtotal</span>
                     <span>₹{sub.toLocaleString("en-IN")}</span>

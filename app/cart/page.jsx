@@ -6,6 +6,7 @@ import { useCartStore } from "@/store/cartStore";
 import { useAdminStore } from "@/store/adminStore";
 import Reveal from "@/components/Reveal";
 import { toast } from "@/store/toastStore";
+import FreeShippingBar from "@/components/FreeShippingBar";
 
 export default function CartPage() {
   const { items, removeItem, restoreItem, updateQuantity, subtotal } = useCartStore();
@@ -79,6 +80,7 @@ export default function CartPage() {
 
         <div className="bg-cream-soft rounded-xl p-6 h-fit">
           <h2 className="font-serif text-xl text-forest mb-4">Order Summary</h2>
+          <FreeShippingBar subtotal={sub} />
           <div className="flex justify-between text-sm mb-2">
             <span>Subtotal</span>
             <span>₹{sub.toLocaleString("en-IN")}</span>

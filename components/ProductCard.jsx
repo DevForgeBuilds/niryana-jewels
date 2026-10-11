@@ -10,6 +10,7 @@ import { useAdminStore } from "@/store/adminStore";
 import { useCartDrawerStore } from "@/store/cartDrawerStore";
 import { toast } from "@/store/toastStore";
 import { StarRatingDisplay } from "./StarRating";
+import useBestsellerIds from "@/hooks/useBestsellerIds";
 
 const LOW_STOCK_THRESHOLD = 8;
 
@@ -20,6 +21,8 @@ export default function ProductCard({ product, discountPercent = 0 }) {
   const restoreWishlistItem = useWishlistStore((s) => s.restoreItem);
   const openCartDrawer = useCartDrawerStore((s) => s.open);
   const allReviews = useAdminStore((s) => s.reviews);
+  const bestsellerIds = useBestsellerIds();
+  const isBestseller = bestsellerIds.has(product.id);
   const [added, setAdded] = useState(false);
 
   const { average, count } = useMemo(() => {
@@ -62,29 +65,48 @@ export default function ProductCard({ product, discountPercent = 0 }) {
         )}
       </Link>
 
-      {discountPercent > 0 && (
-        <span className="absolute top-3 left-3 bg-gold text-forest text-[10px] font-semibold uppercase tracking-wide px-2.5 py-1 rounded-full z-10">
-          {discountPercent}% OFF
-        </span>
-      )}
-      {typeof product.stock_quantity === "number" && product.stock_quantity > 0 && product.stock_quantity <= LOW_STOCK_THRESHOLD && (
-        <span
-          className={`absolute left-3 bg-red-600 text-white text-[10px] font-medium uppercase tracking-wide px-2.5 py-1 rounded-full z-10 ${
-            discountPercent > 0 ? "top-11" : "top-3"
-          }`}
-        >
-          Only {product.stock_quantity} left
-        </span>
-      )}
-      {typeof product.stock_quantity === "number" && product.stock_quantity <= 0 && (
-        <span
-          className={`absolute left-3 bg-charcoal/80 text-white text-[10px] font-medium uppercase tracking-wide px-2.5 py-1 rounded-full z-10 ${
-            discountPercent > 0 ? "top-11" : "top-3"
-          }`}
-        >
-          Out of Stock
-        </span>
-      )}
+      {(() => {
+        const topBadges = [];
+        if (isBestseller) {
+          topBadges.push(
+            <span key="bestseller" className="bg-forest text-cream">
+              ★ Bestseller
+            </span>
+          );
+        }
+        if (discountPercent > 0) {
+          topBadges.push(
+            <span key="discount" className="bg-gold text-forest">
+              {discountPercent}% OFF
+            </span>
+          );
+        }
+        if (typeof product.stock_quantity === "number" && product.stock_quantity > 0 && product.stock_quantity <= LOW_STOCK_THRESHOLD) {
+          topBadges.push(
+            <span key="lowstock" className="bg-red-600 text-white">
+              Only {product.stock_quantity} left
+            </span>
+          );
+        } else if (typeof product.stock_quantity === "number" && product.stock_quantity <= 0) {
+          topBadges.push(
+            <span key="outofstock" className="bg-charcoal/80 text-white">
+              Out of Stock
+            </span>
+          );
+        }
+        return (
+          <div className="absolute top-3 left-3 z-10 flex flex-col items-start gap-1.5">
+            {topBadges.map((badge, i) => (
+              <div
+                key={badge.key}
+                className={`${badge.props.className} text-[10px] font-semibold uppercase tracking-wide px-2.5 py-1 rounded-full`}
+              >
+                {badge.props.children}
+              </div>
+            ))}
+          </div>
+        );
+      })()}
 
       <motion.button
         onClick={(e) => {
