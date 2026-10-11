@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 
 // Floating "back to top" button that appears once the visitor has scrolled
@@ -11,8 +12,13 @@ import { AnimatePresence, motion } from "framer-motion";
 // the site footer scrolls into view, so it never sits on top of the
 // footer's contact/legal text at the bottom of the page.
 export default function ScrollToTopButton() {
+  const pathname = usePathname();
   const [pastThreshold, setPastThreshold] = useState(false);
   const [footerVisible, setFooterVisible] = useState(false);
+
+  // Product pages show a mobile sticky "Add to Cart" bar once you scroll
+  // past the buy box — lift this button above it on small screens.
+  const isProduct = pathname?.startsWith("/product/");
 
   useEffect(() => {
     function onScroll() {
@@ -50,7 +56,9 @@ export default function ScrollToTopButton() {
           whileTap={{ scale: 0.9 }}
           onClick={scrollToTop}
           aria-label="Scroll back to top"
-          className="fixed bottom-6 left-6 z-40 w-11 h-11 rounded-full bg-forest text-cream shadow-lg flex items-center justify-center hover:bg-gold hover:text-forest transition-colors duration-300"
+          className={`fixed left-6 z-40 w-11 h-11 rounded-full bg-forest text-cream shadow-lg flex items-center justify-center hover:bg-gold hover:text-forest transition-colors duration-300 ${
+            isProduct ? "bottom-24 md:bottom-6" : "bottom-6"
+          }`}
         >
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
             <path d="M12 19V5M5 12l7-7 7 7" strokeLinecap="round" strokeLinejoin="round" />

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import { useParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
@@ -38,10 +38,13 @@ export default function ProductDetailClient() {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [notifyEmail, setNotifyEmail] = useState("");
   const [notifyStatus, setNotifyStatus] = useState("idle"); // idle | sending | sent | error
+  const [showStickyBar, setShowStickyBar] = useState(false);
+  const addToCartRowRef = useRef(null);
   const addItem = useCartStore((s) => s.addItem);
   const isFavorite = useWishlistStore((s) => (product ? s.isFavorite(product.id) : false));
   const toggleWishlist = useWishlistStore((s) => s.toggleItem);
   const openCartDrawer = useCartDrawerStore((s) => s.open);
+  const cartDrawerOpen = useCartDrawerStore((s) => s.isOpen);
   const addView = useRecentlyViewedStore((s) => s.addView);
   const allReviews = useAdminStore((s) => s.reviews);
   const bestsellerIds = useBestsellerIds();
@@ -49,6 +52,22 @@ export default function ProductDetailClient() {
   useEffect(() => {
     if (product) addView(product.id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [product?.id]);
+
+  // Mobile sticky "Add to Cart" bar — shows once the real add-to-cart row has
+  // scrolled above the viewport, so shoppers deep in the description/reviews
+  // don't have to scroll all the way back up to buy.
+  useEffect(() => {
+    const el = addToCartRowRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setShowStickyBar(!entry.isIntersecting && entry.boundingClientRect.top < 0);
+      },
+      { threshold: 0 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
   }, [product?.id]);
 
   const hasVariants = Boolean(product?.variants && product.variants.length > 0);
@@ -366,7 +385,7 @@ export default function ProductDetailClient() {
             </div>
           )}
 
-          <div className="flex items-center gap-4 mb-2">
+          <div ref={addToCartRowRef} className="flex items-center gap-4 mb-2">
             {typeof effectiveStock === "number" && effectiveStock <= 0 ? (
               <form onSubmit={handleNotifyMe} className="flex-1 flex flex-col sm:flex-row gap-2">
                 {notifyStatus === "sent" ? (
@@ -519,6 +538,47 @@ export default function ProductDetailClient() {
         initialIndex={activeImg}
         productName={product.name}
       />
+
+      {/* Mobile sticky Add to Cart bar — appears once the real add-to-cart row
+          has scrolled off-screen so buyers deep in the page can still act. */}
+      <AnimatePresence>
+        {showStickyBar && !cartDrawerOpen && !showSizeGuide && !lightboxOpen && (
+          <motion.div
+            initial={{ y: 80, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 80, opacity: 0 }}
+            transition={{ duration: 0.25, ease: "easeOut" }}
+            className="md:hidden fixed bottom-0 left-0 right-0 z-[95] bg-white border-t border-forest/10 shadow-[0_-4px_16px_rgba(0,0,0,0.08)] px-4 py-3 flex items-center gap-3"
+          >
+            <div className="relative w-12 h-12 rounded-lg overflow-hidden shrink-0 bg-cream-soft">
+              <Image src={product.images[0]} alt="" fill sizes="48px" className="object-cover" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm text-forest font-medium truncate">{product.name}</p>
+              <p className="text-sm text-charcoal/70">₹{product.price.toLocaleString("en-IN")}</p>
+            </div>
+            {typeof effectiveStock === "number" && effectiveStock <= 0 ? (
+              <button
+                onClick={() => addToCartRowRef.current?.scrollIntoView({ behavior: "smooth", block: "center" })}
+                className="shrink-0 text-xs uppercase tracking-widest px-5 py-3 rounded-full border border-forest/30 text-forest"
+              >
+                Notify Me
+              </button>
+            ) : (
+              <motion.button
+                onClick={handleAddToCart}
+                whileTap={{ scale: 0.95 }}
+                aria-label={`Add ${product.name} to cart`}
+                className={`shrink-0 text-xs uppercase tracking-widest px-5 py-3 rounded-full transition-colors duration-300 ${
+                  added ? "bg-gold text-forest" : "bg-forest text-cream"
+                }`}
+              >
+                {added ? "✓ Added" : "Add to Cart"}
+              </motion.button>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

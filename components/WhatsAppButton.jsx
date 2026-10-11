@@ -12,9 +12,11 @@ export default function WhatsAppButton() {
   const pathname = usePathname();
   if (pathname?.startsWith("/admin")) return null;
 
-  // Checkout has a mobile sticky pay bar pinned to the bottom — lift the
-  // WhatsApp button above it on small screens so the two never overlap.
+  // Checkout has a mobile sticky pay bar, and product pages get a mobile
+  // sticky "Add to Cart" bar once you scroll past the buy box — lift the
+  // WhatsApp button above both on small screens so nothing overlaps.
   const isCheckout = pathname === "/checkout";
+  const isProduct = pathname?.startsWith("/product/");
 
   return (
     <motion.a
@@ -28,7 +30,7 @@ export default function WhatsAppButton() {
       whileHover={{ scale: 1.08 }}
       whileTap={{ scale: 0.95 }}
       className={`fixed right-5 z-[90] flex items-center justify-center w-14 h-14 rounded-full bg-[#25D366] shadow-lg shadow-black/20 ${
-        isCheckout ? "bottom-24 md:bottom-5" : "bottom-5"
+        isCheckout || isProduct ? "bottom-24 md:bottom-5" : "bottom-5"
       }`}
     >
       <span className="absolute inline-flex h-full w-full rounded-full bg-[#25D366] opacity-75 animate-ping" />
