@@ -318,8 +318,8 @@ async function sendOrderInvoiceEmail(order) {
           Total Paid: ₹${Number(order.total || 0).toLocaleString("en-IN")}
         </p>
       `,
-      ctaUrl: `${SITE_URL}/orders/${order.orderNumber}?contact=${encodeURIComponent(order.email || order.phone || "")}`,
-      ctaLabel: "Track Your Order",
+      ctaUrl: null,
+      ctaLabel: null,
       footerNote: "Keep this email for your records — the attached PDF is your official tax invoice.",
     }),
     attachments: [
