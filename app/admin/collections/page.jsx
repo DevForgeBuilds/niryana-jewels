@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useAdminStore } from "@/store/adminStore";
 import { isSaleActive } from "@/lib/festiveSale";
 import { toast } from "@/store/toastStore";
+import ConfirmDialog from "@/components/admin/ConfirmDialog";
+import { ActionButton } from "@/components/admin/ActionButtons";
 
 // Sale start/end are stored as plain "wall clock" strings (no timezone math — see
 // backend/routes/collections.js). These helpers just convert between that format
@@ -51,6 +53,7 @@ export default function AdminFestiveCollectionsPage() {
   const [showForm, setShowForm] = useState(false);
   const [editingSlug, setEditingSlug] = useState(null); // null = adding new
   const [form, setForm] = useState(EMPTY_FORM);
+  const [confirmTarget, setConfirmTarget] = useState(null);
 
   function openAddForm() {
     setEditingSlug(null);
@@ -119,10 +122,14 @@ export default function AdminFestiveCollectionsPage() {
   }
 
   function handleDelete(collection) {
-    if (confirm(`Delete "${collection.name}"? This cannot be undone.`)) {
-      deleteFestiveCollection(collection.slug);
-      toast(`"${collection.name}" deleted.`, "info");
-    }
+    setConfirmTarget(collection);
+  }
+
+  function confirmDeleteCollection() {
+    if (!confirmTarget) return;
+    deleteFestiveCollection(confirmTarget.slug);
+    toast(`"${confirmTarget.name}" deleted.`, "info");
+    setConfirmTarget(null);
   }
 
   return (
@@ -387,13 +394,15 @@ export default function AdminFestiveCollectionsPage() {
                     <span className="text-charcoal/30 text-xs">—</span>
                   )}
                 </td>
-                <td className="py-3 px-4 space-x-3">
-                  <button onClick={() => openEditForm(c)} className="text-gold hover:underline">
-                    Edit
-                  </button>
-                  <button onClick={() => handleDelete(c)} className="text-red-500 hover:underline">
-                    Delete
-                  </button>
+                <td className="py-3 px-4">
+                  <div className="flex items-center gap-2">
+                    <ActionButton onClick={() => openEditForm(c)} variant="edit" icon="edit">
+                      Edit
+                    </ActionButton>
+                    <ActionButton onClick={() => handleDelete(c)} variant="danger" icon="delete">
+                      Delete
+                    </ActionButton>
+                  </div>
                 </td>
               </tr>
             ))}
@@ -407,6 +416,15 @@ export default function AdminFestiveCollectionsPage() {
           </tbody>
         </table>
       </div>
+
+      <ConfirmDialog
+        open={!!confirmTarget}
+        title="Delete this collection?"
+        message={confirmTarget ? `"${confirmTarget.name}" will be permanently removed. This can't be undone.` : ""}
+        confirmLabel="Delete"
+        onConfirm={confirmDeleteCollection}
+        onCancel={() => setConfirmTarget(null)}
+      />
     </div>
   );
 }

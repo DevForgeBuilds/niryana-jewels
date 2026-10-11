@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { useAdminStore } from "@/store/adminStore";
 import { toast } from "@/store/toastStore";
+import ConfirmDialog from "@/components/admin/ConfirmDialog";
+import { ActionButton } from "@/components/admin/ActionButtons";
 
 export default function CategoriesPage() {
   const { categories, products, addCategory, renameCategory, deleteCategory } = useAdminStore();
@@ -11,6 +13,8 @@ export default function CategoriesPage() {
   const [editingSlug, setEditingSlug] = useState(null);
   const [editValue, setEditValue] = useState("");
   const [savingEdit, setSavingEdit] = useState(false);
+  const [confirmTarget, setConfirmTarget] = useState(null);
+  const [deleting, setDeleting] = useState(false);
 
   async function handleAdd(e) {
     e.preventDefault();
@@ -41,17 +45,25 @@ export default function CategoriesPage() {
     }
   }
 
-  async function handleDelete(c) {
+  function requestDelete(c) {
     if (countFor(c.slug) > 0) {
       toast("Move or delete products in this category first.", "error");
       return;
     }
-    if (!confirm(`Delete category "${c.name}"?`)) return;
+    setConfirmTarget(c);
+  }
+
+  async function confirmDelete() {
+    if (!confirmTarget) return;
+    setDeleting(true);
     try {
-      await deleteCategory(c.slug);
+      await deleteCategory(confirmTarget.slug);
       toast("Category deleted.", "success");
+      setConfirmTarget(null);
     } catch (err) {
       toast(err.message || "Could not delete category. Please try again.", "error");
+    } finally {
+      setDeleting(false);
     }
   }
 
@@ -105,43 +117,56 @@ export default function CategoriesPage() {
                 </td>
                 <td className="py-3 px-4 text-charcoal/50">{c.slug}</td>
                 <td className="py-3 px-4">{countFor(c.slug)}</td>
-                <td className="py-3 px-4 space-x-3">
-                  {editingSlug === c.slug ? (
-                    <>
-                      <button
-                        onClick={() => handleRename(c.slug)}
-                        disabled={savingEdit}
-                        className="text-gold hover:underline disabled:opacity-50"
-                      >
-                        {savingEdit ? "Saving…" : "Save"}
-                      </button>
-                      <button onClick={() => setEditingSlug(null)} className="text-charcoal/50 hover:underline">
-                        Cancel
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      <button
-                        onClick={() => {
-                          setEditingSlug(c.slug);
-                          setEditValue(c.name);
-                        }}
-                        className="text-gold hover:underline"
-                      >
-                        Rename
-                      </button>
-                      <button onClick={() => handleDelete(c)} className="text-red-500 hover:underline">
-                        Delete
-                      </button>
-                    </>
-                  )}
+                <td className="py-3 px-4">
+                  <div className="flex items-center gap-2">
+                    {editingSlug === c.slug ? (
+                      <>
+                        <ActionButton
+                          onClick={() => handleRename(c.slug)}
+                          disabled={savingEdit}
+                          variant="primary"
+                          icon="check"
+                        >
+                          {savingEdit ? "Saving…" : "Save"}
+                        </ActionButton>
+                        <ActionButton onClick={() => setEditingSlug(null)} variant="neutral" icon="x">
+                          Cancel
+                        </ActionButton>
+                      </>
+                    ) : (
+                      <>
+                        <ActionButton
+                          onClick={() => {
+                            setEditingSlug(c.slug);
+                            setEditValue(c.name);
+                          }}
+                          variant="edit"
+                          icon="edit"
+                        >
+                          Rename
+                        </ActionButton>
+                        <ActionButton onClick={() => requestDelete(c)} variant="danger" icon="delete">
+                          Delete
+                        </ActionButton>
+                      </>
+                    )}
+                  </div>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
+
+      <ConfirmDialog
+        open={!!confirmTarget}
+        title="Delete this category?"
+        message={confirmTarget ? `"${confirmTarget.name}" will be permanently removed. This can't be undone.` : ""}
+        confirmLabel="Delete"
+        busy={deleting}
+        onConfirm={confirmDelete}
+        onCancel={() => setConfirmTarget(null)}
+      />
     </div>
   );
 }
-

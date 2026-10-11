@@ -2,6 +2,9 @@
 
 import { useState } from "react";
 import { useAdminStore } from "@/store/adminStore";
+import { toast } from "@/store/toastStore";
+import ConfirmDialog from "@/components/admin/ConfirmDialog";
+import { ActionButton } from "@/components/admin/ActionButtons";
 
 function Stars({ rating }) {
   return (
@@ -21,6 +24,7 @@ const statusColor = {
 export default function ReviewsPage() {
   const { reviews, approveReview, rejectReview, deleteReview } = useAdminStore();
   const [filter, setFilter] = useState("all");
+  const [confirmTarget, setConfirmTarget] = useState(null);
 
   const filtered = filter === "all" ? reviews : reviews.filter((r) => r.status === filter);
   const pendingCount = reviews.filter((r) => r.status === "pending").length;
@@ -66,20 +70,20 @@ export default function ReviewsPage() {
                 {r.status}
               </span>
             </div>
-            <div className="flex gap-3 mt-4 text-xs">
+            <div className="flex flex-wrap gap-2 mt-4">
               {r.status !== "approved" && (
-                <button onClick={() => approveReview(r.id)} className="text-green-600 hover:underline">
+                <ActionButton onClick={() => approveReview(r.id)} variant="positive" icon="check">
                   Approve
-                </button>
+                </ActionButton>
               )}
               {r.status !== "rejected" && (
-                <button onClick={() => rejectReview(r.id)} className="text-yellow-600 hover:underline">
+                <ActionButton onClick={() => rejectReview(r.id)} variant="warning" icon="x">
                   Reject
-                </button>
+                </ActionButton>
               )}
-              <button onClick={() => deleteReview(r.id)} className="text-red-500 hover:underline">
+              <ActionButton onClick={() => setConfirmTarget(r)} variant="danger" icon="delete">
                 Delete
-              </button>
+              </ActionButton>
             </div>
           </div>
         ))}
@@ -90,6 +94,19 @@ export default function ReviewsPage() {
       <p className="text-xs text-charcoal/40 mt-6">
         Live data from MySQL — updates automatically as customers submit reviews.
       </p>
+
+      <ConfirmDialog
+        open={!!confirmTarget}
+        title="Delete this review?"
+        message={confirmTarget ? `The review by ${confirmTarget.customerName} on "${confirmTarget.productName}" will be permanently removed.` : ""}
+        confirmLabel="Delete"
+        onConfirm={() => {
+          deleteReview(confirmTarget.id);
+          toast("Review deleted.", "info");
+          setConfirmTarget(null);
+        }}
+        onCancel={() => setConfirmTarget(null)}
+      />
     </div>
   );
 }

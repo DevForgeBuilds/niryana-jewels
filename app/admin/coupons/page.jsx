@@ -2,10 +2,14 @@
 
 import { useState } from "react";
 import { useAdminStore } from "@/store/adminStore";
+import { toast } from "@/store/toastStore";
+import ConfirmDialog from "@/components/admin/ConfirmDialog";
+import { DeleteAction } from "@/components/admin/ActionButtons";
 
 export default function CouponsPage() {
   const { coupons, addCoupon, toggleCoupon, deleteCoupon } = useAdminStore();
   const [form, setForm] = useState({ code: "", type: "percent", value: "", expiresAt: "" });
+  const [confirmTarget, setConfirmTarget] = useState(null);
 
   function handleSubmit(e) {
     e.preventDefault();
@@ -18,6 +22,13 @@ export default function CouponsPage() {
       active: true,
     });
     setForm({ code: "", type: "percent", value: "", expiresAt: "" });
+  }
+
+  function confirmDeleteCoupon() {
+    if (!confirmTarget) return;
+    deleteCoupon(confirmTarget.id);
+    toast(`Coupon "${confirmTarget.code}" deleted.`, "info");
+    setConfirmTarget(null);
   }
 
   return (
@@ -90,9 +101,7 @@ export default function CouponsPage() {
                   </button>
                 </td>
                 <td className="py-3 px-4">
-                  <button onClick={() => deleteCoupon(c.id)} className="text-red-500 hover:underline">
-                    Delete
-                  </button>
+                  <DeleteAction onClick={() => setConfirmTarget(c)} />
                 </td>
               </tr>
             ))}
@@ -103,6 +112,15 @@ export default function CouponsPage() {
         Live data from MySQL — coupons are re-validated against this table in real time
         when a customer applies one at checkout.
       </p>
+
+      <ConfirmDialog
+        open={!!confirmTarget}
+        title="Delete this coupon?"
+        message={confirmTarget ? `"${confirmTarget.code}" will stop working everywhere immediately, including the Welcome Offer popup if it's selected there.` : ""}
+        confirmLabel="Delete"
+        onConfirm={confirmDeleteCoupon}
+        onCancel={() => setConfirmTarget(null)}
+      />
     </div>
   );
 }

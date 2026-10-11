@@ -2,10 +2,14 @@
 
 import { useState } from "react";
 import { useAdminStore } from "@/store/adminStore";
+import { toast } from "@/store/toastStore";
+import ConfirmDialog from "@/components/admin/ConfirmDialog";
+import { DeleteAction } from "@/components/admin/ActionButtons";
 
 export default function StaffPage() {
   const { staff, addStaff, toggleStaff, deleteStaff } = useAdminStore();
   const [form, setForm] = useState({ name: "", email: "", role: "Manager" });
+  const [confirmTarget, setConfirmTarget] = useState(null);
 
   function handleSubmit(e) {
     e.preventDefault();
@@ -78,9 +82,7 @@ export default function StaffPage() {
                 </td>
                 <td className="py-3 px-4">
                   {s.role !== "Owner / Admin" && (
-                    <button onClick={() => deleteStaff(s.id)} className="text-red-500 hover:underline">
-                      Remove
-                    </button>
+                    <DeleteAction onClick={() => setConfirmTarget(s)} label="Remove" />
                   )}
                 </td>
               </tr>
@@ -92,6 +94,19 @@ export default function StaffPage() {
         Demo only — wire real role-based access control (RBAC) into NextAuth sessions and a
         MySQL `users.role` column before going live.
       </p>
+
+      <ConfirmDialog
+        open={!!confirmTarget}
+        title="Remove this staff member?"
+        message={confirmTarget ? `${confirmTarget.name} (${confirmTarget.email}) will lose access immediately.` : ""}
+        confirmLabel="Remove"
+        onConfirm={() => {
+          deleteStaff(confirmTarget.id);
+          toast(`${confirmTarget.name} removed.`, "info");
+          setConfirmTarget(null);
+        }}
+        onCancel={() => setConfirmTarget(null)}
+      />
     </div>
   );
 }

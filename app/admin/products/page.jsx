@@ -6,11 +6,15 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useAdminStore } from "@/store/adminStore";
 import { downloadCSV } from "@/lib/csv";
+import { toast } from "@/store/toastStore";
+import ConfirmDialog from "@/components/admin/ConfirmDialog";
+import { EditAction, DeleteAction } from "@/components/admin/ActionButtons";
 
 function ProductsContent() {
   const { products, deleteProduct } = useAdminStore();
   const searchParams = useSearchParams();
   const [query, setQuery] = useState("");
+  const [confirmTarget, setConfirmTarget] = useState(null);
 
   useEffect(() => {
     const q = searchParams.get("q");
@@ -84,16 +88,11 @@ function ProductsContent() {
                 <td className="py-3 px-4 capitalize text-charcoal/70">{p.category}</td>
                 <td className="py-3 px-4">₹{p.price.toLocaleString("en-IN")}</td>
                 <td className="py-3 px-4">{p.stock_quantity ?? "—"}</td>
-                <td className="py-3 px-4 space-x-3">
-                  <Link href={`/admin/products/${p.id}/edit`} className="text-gold hover:underline">Edit</Link>
-                  <button
-                    onClick={() => {
-                      if (confirm(`Delete "${p.name}"?`)) deleteProduct(p.id);
-                    }}
-                    className="text-red-500 hover:underline"
-                  >
-                    Delete
-                  </button>
+                <td className="py-3 px-4">
+                  <div className="flex items-center gap-2">
+                    <EditAction href={`/admin/products/${p.id}/edit`} />
+                    <DeleteAction onClick={() => setConfirmTarget(p)} />
+                  </div>
                 </td>
               </tr>
             ))}
@@ -105,6 +104,19 @@ function ProductsContent() {
           </tbody>
         </table>
       </div>
+
+      <ConfirmDialog
+        open={!!confirmTarget}
+        title="Delete this product?"
+        message={confirmTarget ? `"${confirmTarget.name}" will be permanently removed from the catalog. This can't be undone.` : ""}
+        confirmLabel="Delete"
+        onConfirm={() => {
+          deleteProduct(confirmTarget.id);
+          toast(`"${confirmTarget.name}" deleted.`, "info");
+          setConfirmTarget(null);
+        }}
+        onCancel={() => setConfirmTarget(null)}
+      />
     </div>
   );
 }
