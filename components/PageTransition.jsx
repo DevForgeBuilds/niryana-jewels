@@ -4,14 +4,19 @@ import { usePathname } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 
 /**
- * Wraps every route's content in a short, restrained fade+rise so navigating
- * between pages feels like one continuous, polished experience instead of an
- * abrupt hard-cut (a common "premium feel" touch on fine-jewellery sites).
- * Respects prefers-reduced-motion via framer-motion's own global handling of
- * the OS setting is not automatic, so we keep the motion tiny and quick.
+ * Wraps every storefront route's content in a short, restrained fade+rise so
+ * navigating between pages feels like one continuous, polished experience
+ * instead of an abrupt hard-cut (a common "premium feel" touch on
+ * fine-jewellery sites). Admin dashboard routes are intentionally excluded —
+ * admins move between many screens quickly and the fade just adds friction
+ * there, so /admin renders instantly with no transition.
  */
 export default function PageTransition({ children }) {
   const pathname = usePathname();
+
+  if (pathname?.startsWith("/admin")) {
+    return <>{children}</>;
+  }
 
   return (
     <AnimatePresence mode="wait" initial={false}>
@@ -27,3 +32,4 @@ export default function PageTransition({ children }) {
     </AnimatePresence>
   );
 }
+
