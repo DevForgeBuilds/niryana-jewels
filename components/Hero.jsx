@@ -16,6 +16,8 @@ export default function Hero() {
         muted
         loop
         playsInline
+        preload="auto"
+        fetchPriority="high"
       />
       <div className="absolute inset-0 bg-gradient-to-b from-forest/60 via-forest/20 to-forest/80" />
 

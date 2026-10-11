@@ -5,6 +5,7 @@ import Footer from "@/components/Footer";
 import CartDrawer from "@/components/CartDrawer";
 import ToastContainer from "@/components/ToastContainer";
 import WhatsAppButton from "@/components/WhatsAppButton";
+import ScrollToTopButton from "@/components/ScrollToTopButton";
 import AuthProvider from "@/components/AuthProvider";
 import AdminDataProvider from "@/components/AdminDataProvider";
 import AnalyticsScripts from "@/components/AnalyticsScripts";
@@ -76,6 +77,7 @@ export default function RootLayout({ children }) {
           <Footer />
           <CartDrawer />
           <WhatsAppButton />
+          <ScrollToTopButton />
           <WelcomeOfferPopup />
           <ToastContainer />
         </AuthProvider>

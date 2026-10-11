@@ -89,6 +89,7 @@ function FaqItem({ q, a, isOpen, onToggle }) {
     <div className="border-b border-forest/10">
       <button
         onClick={onToggle}
+        aria-expanded={isOpen}
         className="w-full flex items-center justify-between gap-4 py-5 text-left"
       >
         <span className="font-medium text-forest">{q}</span>

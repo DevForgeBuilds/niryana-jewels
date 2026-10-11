@@ -17,6 +17,7 @@ import SizeGuideModal from "@/components/SizeGuideModal";
 import ProductLightbox from "@/components/ProductLightbox";
 import ShareButtons from "@/components/ShareButtons";
 import TrustBadges from "@/components/TrustBadges";
+import Breadcrumbs from "@/components/Breadcrumbs";
 import useBestsellerIds from "@/hooks/useBestsellerIds";
 import Reveal from "@/components/Reveal";
 import { toast } from "@/store/toastStore";
@@ -123,6 +124,13 @@ export default function ProductDetailClient() {
 
   return (
     <div className="pt-28 pb-24 max-w-7xl mx-auto px-6">
+      <Breadcrumbs
+        items={[
+          { label: "Shop", href: "/shop" },
+          { label: product.category, href: `/shop?category=${product.category}` },
+          { label: product.name },
+        ]}
+      />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
         <Reveal>
           <div className="relative aspect-square rounded-2xl overflow-hidden mb-4 bg-white select-none">
@@ -221,18 +229,50 @@ export default function ProductDetailClient() {
           </div>
 
           {media.length > 1 && (
-            <div className="flex items-center justify-center gap-1.5 mb-4">
-              {media.map((m, i) => (
-                <button
-                  key={i}
-                  onClick={() => setActiveImg(i)}
-                  aria-label={`Go to ${m.type} ${i + 1}`}
-                  className={`h-1.5 rounded-full transition-all duration-300 ${
-                    i === activeImg ? "w-6 bg-forest" : "w-1.5 bg-forest/20"
-                  }`}
-                />
-              ))}
-            </div>
+            <>
+              {/* Thumbnail strip — tap/click any angle or the video to jump straight to it */}
+              <div className="hidden sm:flex items-center justify-center gap-3 mb-4">
+                {media.map((m, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setActiveImg(i)}
+                    aria-label={`View ${m.type === "video" ? "video" : `image ${i + 1}`} of ${product.name}`}
+                    aria-current={i === activeImg}
+                    className={`relative w-16 h-16 rounded-xl overflow-hidden shrink-0 border-2 transition-colors duration-200 ${
+                      i === activeImg ? "border-gold" : "border-transparent hover:border-forest/30"
+                    }`}
+                  >
+                    {m.type === "video" ? (
+                      <>
+                        <video src={m.src} muted playsInline className="w-full h-full object-cover" />
+                        <span className="absolute inset-0 bg-black/30 flex items-center justify-center">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="#FFFFFF">
+                            <path d="M8 5v14l11-7-11-7z" />
+                          </svg>
+                        </span>
+                      </>
+                    ) : (
+                      <Image src={m.src} alt="" fill sizes="64px" className="object-cover" />
+                    )}
+                  </button>
+                ))}
+              </div>
+
+              {/* Dot indicators — compact alternative for small screens */}
+              <div className="flex sm:hidden items-center justify-center gap-1.5 mb-4">
+                {media.map((m, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setActiveImg(i)}
+                    aria-label={`Go to ${m.type} ${i + 1}`}
+                    aria-current={i === activeImg}
+                    className={`h-1.5 rounded-full transition-all duration-300 ${
+                      i === activeImg ? "w-6 bg-forest" : "w-1.5 bg-forest/20"
+                    }`}
+                  />
+                ))}
+              </div>
+            </>
           )}
 
         </Reveal>
@@ -367,9 +407,23 @@ export default function ProductDetailClient() {
             ) : (
               <>
                 <div className="flex items-center border border-forest/20 rounded-full">
-                  <button onClick={() => setQty((q) => Math.max(1, q - 1))} className="px-4 py-2 text-forest">−</button>
-                  <span className="px-4">{qty}</span>
-                  <button onClick={() => setQty((q) => q + 1)} className="px-4 py-2 text-forest">+</button>
+                  <button
+                    onClick={() => setQty((q) => Math.max(1, q - 1))}
+                    aria-label="Decrease quantity"
+                    className="px-4 py-2 text-forest"
+                  >
+                    −
+                  </button>
+                  <span className="px-4" aria-live="polite">
+                    {qty}
+                  </span>
+                  <button
+                    onClick={() => setQty((q) => q + 1)}
+                    aria-label="Increase quantity"
+                    className="px-4 py-2 text-forest"
+                  >
+                    +
+                  </button>
                 </div>
                 <motion.button
                   onClick={handleAddToCart}

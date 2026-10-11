@@ -4,6 +4,8 @@ import { Suspense, useMemo, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useAdminStore } from "@/store/adminStore";
 import ProductCard from "@/components/ProductCard";
+import { ProductGridSkeleton } from "@/components/ProductCardSkeleton";
+import Breadcrumbs from "@/components/Breadcrumbs";
 import Reveal from "@/components/Reveal";
 
 function ShopContent() {
@@ -64,6 +66,7 @@ function ShopContent() {
 
   return (
     <div className="pt-28 pb-24 max-w-7xl mx-auto px-6">
+      <Breadcrumbs items={[{ label: "Shop" }]} />
       <Reveal className="text-center mb-14">
         <p className="text-gold uppercase tracking-widest2 text-xs mb-3">Shop</p>
         <h1 className="font-serif text-4xl md:text-5xl text-forest">The Collection</h1>
@@ -151,6 +154,8 @@ function ShopContent() {
             step={500}
             value={priceRange[0]}
             onChange={handleMinChange}
+            aria-label="Minimum price"
+            aria-valuetext={`₹${priceRange[0].toLocaleString("en-IN")}`}
             className="range-thumb absolute w-full appearance-none bg-transparent pointer-events-none"
           />
           <input
@@ -160,19 +165,21 @@ function ShopContent() {
             step={500}
             value={priceRange[1]}
             onChange={handleMaxChange}
+            aria-label="Maximum price"
+            aria-valuetext={`₹${priceRange[1].toLocaleString("en-IN")}`}
             className="range-thumb absolute w-full appearance-none bg-transparent pointer-events-none"
           />
         </div>
       </div>
 
       {loading ? (
-        <p className="text-center text-charcoal/60">Loading products…</p>
+        <ProductGridSkeleton />
       ) : filtered.length === 0 ? (
         <p className="text-center text-charcoal/60">No products in this filter yet.</p>
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          {filtered.map((p) => (
-            <ProductCard key={p.id} product={p} />
+          {filtered.map((p, i) => (
+            <ProductCard key={p.id} product={p} priority={i < 4} />
           ))}
         </div>
       )}

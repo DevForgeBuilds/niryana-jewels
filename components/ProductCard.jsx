@@ -11,10 +11,11 @@ import { useCartDrawerStore } from "@/store/cartDrawerStore";
 import { toast } from "@/store/toastStore";
 import { StarRatingDisplay } from "./StarRating";
 import useBestsellerIds from "@/hooks/useBestsellerIds";
+import QuickViewModal from "./QuickViewModal";
 
 const LOW_STOCK_THRESHOLD = 8;
 
-export default function ProductCard({ product, discountPercent = 0 }) {
+export default function ProductCard({ product, discountPercent = 0, priority = false }) {
   const addItem = useCartStore((s) => s.addItem);
   const isFavorite = useWishlistStore((s) => s.isFavorite(product.id));
   const toggleWishlist = useWishlistStore((s) => s.toggleItem);
@@ -24,6 +25,7 @@ export default function ProductCard({ product, discountPercent = 0 }) {
   const bestsellerIds = useBestsellerIds();
   const isBestseller = bestsellerIds.has(product.id);
   const [added, setAdded] = useState(false);
+  const [quickViewOpen, setQuickViewOpen] = useState(false);
 
   const { average, count } = useMemo(() => {
     const approved = allReviews.filter((r) => r.productName === product.name && r.status === "approved");
@@ -52,6 +54,8 @@ export default function ProductCard({ product, discountPercent = 0 }) {
           alt={product.name}
           fill
           sizes="(max-width: 768px) 50vw, 25vw"
+          priority={priority}
+          loading={priority ? undefined : "lazy"}
           className="object-cover transition-transform duration-700 ease-apple group-hover:scale-105"
         />
         {product.images[1] && (
@@ -152,6 +156,25 @@ export default function ProductCard({ product, discountPercent = 0 }) {
           <path d="M12 20.5s-7.5-4.6-10-9.2C0.3 8 1.8 4.5 5 3.4c2.1-.7 4.3.1 5.5 1.9l1.5 2.1 1.5-2.1c1.2-1.8 3.4-2.6 5.5-1.9 3.2 1.1 4.7 4.6 3 7.9-2.5 4.6-10 9.2-10 9.2z" />
         </motion.svg>
       </motion.button>
+
+      <motion.button
+        onClick={(e) => {
+          e.preventDefault();
+          setQuickViewOpen(true);
+        }}
+        whileTap={{ scale: 0.85 }}
+        aria-label={`Quick view ${product.name}`}
+        className="absolute top-14 right-3 z-10 w-9 h-9 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center shadow-sm opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-300"
+      >
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#1B3A2F" strokeWidth="1.8">
+          <path d="M1.5 12S5 5 12 5s10.5 7 10.5 7-3.5 7-10.5 7S1.5 12 1.5 12z" strokeLinejoin="round" />
+          <circle cx="12" cy="12" r="3" />
+        </svg>
+      </motion.button>
+
+      {quickViewOpen && (
+        <QuickViewModal product={product} onClose={() => setQuickViewOpen(false)} />
+      )}
 
       <div className="p-4">
         <Link href={`/product/${product.slug}`}>

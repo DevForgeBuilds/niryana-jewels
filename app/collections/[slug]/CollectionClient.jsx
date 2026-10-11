@@ -6,6 +6,7 @@ import { isSaleActive } from "@/lib/festiveSale";
 import { toast } from "@/store/toastStore";
 import ProductCard from "@/components/ProductCard";
 import CountdownTimer from "@/components/CountdownTimer";
+import Breadcrumbs from "@/components/Breadcrumbs";
 import Reveal from "@/components/Reveal";
 
 const ACCENTS = {
@@ -128,6 +129,7 @@ export default function CollectionClient({ slug }) {
 
       {/* Products */}
       <section id="collection-products" className="max-w-7xl mx-auto px-6 pt-20">
+        <Breadcrumbs items={[{ label: "Collections", href: "/collections" }, { label: collection.name }]} />
         <Reveal className="text-center mb-14">
           <p className="text-gold uppercase tracking-widest2 text-xs mb-3">Curated For You</p>
           <h2 className="font-serif text-3xl md:text-5xl text-forest">{collection.name}</h2>

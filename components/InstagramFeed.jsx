@@ -36,6 +36,7 @@ export default function InstagramFeed() {
               href="https://instagram.com/niryana_jewels"
               target="_blank"
               rel="noreferrer"
+              aria-label="View this post on Niryana Jewels' Instagram"
               className="relative block aspect-square rounded-xl overflow-hidden group"
             >
               <Image

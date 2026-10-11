@@ -44,6 +44,7 @@ export default function Newsletter() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="Your email address"
+              aria-label="Email address for newsletter"
               className="px-5 py-3 rounded-full border border-forest/20 focus:border-gold outline-none w-full sm:w-80 bg-white"
             />
             <button

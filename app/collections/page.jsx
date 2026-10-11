@@ -1,4 +1,5 @@
 import Reveal from "@/components/Reveal";
+import Breadcrumbs from "@/components/Breadcrumbs";
 import CollectionsIndexClient from "./CollectionsIndexClient";
 
 export const metadata = {
@@ -12,6 +13,7 @@ export default function CollectionsIndexPage() {
   return (
     <div className="pt-28 pb-24">
       <section className="max-w-4xl mx-auto px-6 text-center mb-16">
+        <Breadcrumbs items={[{ label: "Collections" }]} />
         <Reveal>
           <p className="text-gold uppercase tracking-widest2 text-xs mb-3">Shop by Occasion</p>
           <h1 className="font-serif text-4xl md:text-6xl text-forest mb-6">Festive Collections</h1>

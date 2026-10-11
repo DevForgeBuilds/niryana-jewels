@@ -54,10 +54,10 @@ export default function ContactPage() {
               }}
               className="space-y-4 bg-white p-6 rounded-xl shadow-sm"
             >
-              <input required placeholder="Your Name" className="w-full border border-forest/20 rounded-lg px-4 py-3" />
-              <input required type="email" placeholder="Email" className="w-full border border-forest/20 rounded-lg px-4 py-3" />
-              <input required placeholder="Phone" className="w-full border border-forest/20 rounded-lg px-4 py-3" />
-              <textarea required placeholder="Message" rows={5} className="w-full border border-forest/20 rounded-lg px-4 py-3" />
+              <input required aria-label="Your Name" placeholder="Your Name" className="w-full border border-forest/20 rounded-lg px-4 py-3" />
+              <input required type="email" aria-label="Email" placeholder="Email" className="w-full border border-forest/20 rounded-lg px-4 py-3" />
+              <input required aria-label="Phone" placeholder="Phone" className="w-full border border-forest/20 rounded-lg px-4 py-3" />
+              <textarea required aria-label="Message" placeholder="Message" rows={5} className="w-full border border-forest/20 rounded-lg px-4 py-3" />
               <button
                 type="submit"
                 className="w-full bg-forest text-cream py-3 rounded-full text-sm uppercase tracking-widest hover:bg-gold hover:text-forest transition-colors duration-300"
