@@ -7,18 +7,34 @@ import { AnimatePresence, motion } from "framer-motion";
 // past one viewport height — useful on long pages (shop grid, product page,
 // collections) especially on mobile where scrolling back up takes a while.
 // Placed bottom-left so it never collides with the WhatsApp button
-// (bottom-right) or the cart drawer trigger.
+// (bottom-right) or the cart drawer trigger. It also hides itself whenever
+// the site footer scrolls into view, so it never sits on top of the
+// footer's contact/legal text at the bottom of the page.
 export default function ScrollToTopButton() {
-  const [visible, setVisible] = useState(false);
+  const [pastThreshold, setPastThreshold] = useState(false);
+  const [footerVisible, setFooterVisible] = useState(false);
 
   useEffect(() => {
     function onScroll() {
-      setVisible(window.scrollY > window.innerHeight * 0.8);
+      setPastThreshold(window.scrollY > window.innerHeight * 0.8);
     }
     window.addEventListener("scroll", onScroll, { passive: true });
     onScroll();
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
+
+  useEffect(() => {
+    const footer = document.querySelector("footer");
+    if (!footer) return;
+    const observer = new IntersectionObserver(([entry]) => setFooterVisible(entry.isIntersecting), {
+      rootMargin: "0px",
+      threshold: 0,
+    });
+    observer.observe(footer);
+    return () => observer.disconnect();
+  }, []);
+
+  const visible = pastThreshold && !footerVisible;
 
   function scrollToTop() {
     window.scrollTo({ top: 0, behavior: "smooth" });
