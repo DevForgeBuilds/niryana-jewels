@@ -27,12 +27,15 @@ export default function WishlistPage() {
         >
           <path d="M12 20.5s-7.5-4.6-10-9.2C0.3 8 1.8 4.5 5 3.4c2.1-.7 4.3.1 5.5 1.9l1.5 2.1 1.5-2.1c1.2-1.8 3.4-2.6 5.5-1.9 3.2 1.1 4.7 4.6 3 7.9-2.5 4.6-10 9.2-10 9.2z" />
         </svg>
-        <p className="text-forest text-xl font-serif mb-4">Your wishlist is empty.</p>
+        <p className="text-forest text-xl font-serif mb-2">Your wishlist is empty.</p>
         <p className="text-charcoal/50 text-sm mb-6">
           Tap the heart on any piece to save it here for later.
         </p>
-        <Link href="/shop" className="text-gold underline">
-          Explore the Collection
+        <Link
+          href="/shop"
+          className="inline-block bg-forest text-cream px-8 py-3 rounded-full text-sm uppercase tracking-widest hover:bg-gold hover:text-forest transition-colors duration-300"
+        >
+          Shop Now
         </Link>
       </div>
     );

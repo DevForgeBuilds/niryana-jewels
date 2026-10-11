@@ -57,6 +57,19 @@ export default function CartDrawer() {
 
             {items.length === 0 ? (
               <div className="flex-1 flex flex-col items-center justify-center px-6 text-center">
+                <svg
+                  width="44"
+                  height="44"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="#1B3A2F"
+                  strokeWidth="1.4"
+                  className="mb-5 opacity-40"
+                >
+                  <path d="M6 6h15l-1.5 9h-12L5 3H2" strokeLinecap="round" strokeLinejoin="round" />
+                  <circle cx="9" cy="20" r="1.4" />
+                  <circle cx="18" cy="20" r="1.4" />
+                </svg>
                 <p className="text-forest font-serif text-lg mb-2">Your cart is empty.</p>
                 <p className="text-charcoal/50 text-sm mb-6">Explore the collection to find your next favourite piece.</p>
                 <Link
@@ -64,7 +77,7 @@ export default function CartDrawer() {
                   onClick={close}
                   className="bg-forest text-cream px-6 py-2.5 rounded-full text-sm uppercase tracking-widest hover:bg-gold hover:text-forest transition-colors duration-300"
                 >
-                  Explore Shop
+                  Shop Now
                 </Link>
               </div>
             ) : (

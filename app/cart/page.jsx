@@ -30,10 +30,29 @@ export default function CartPage() {
 
   if (items.length === 0) {
     return (
-      <div className="pt-40 pb-24 text-center">
-        <p className="text-forest text-xl font-serif mb-4">Your cart is empty.</p>
-        <Link href="/shop" className="text-gold underline">
-          Continue Shopping
+      <div className="pt-40 pb-24 text-center px-6">
+        <svg
+          width="52"
+          height="52"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="#1B3A2F"
+          strokeWidth="1.4"
+          className="mx-auto mb-6 opacity-40"
+        >
+          <path d="M6 6h15l-1.5 9h-12L5 3H2" strokeLinecap="round" strokeLinejoin="round" />
+          <circle cx="9" cy="20" r="1.4" />
+          <circle cx="18" cy="20" r="1.4" />
+        </svg>
+        <p className="text-forest text-xl font-serif mb-2">Your cart is empty.</p>
+        <p className="text-charcoal/50 text-sm mb-6">
+          Looks like you haven&apos;t added anything yet — let&apos;s find something beautiful.
+        </p>
+        <Link
+          href="/shop"
+          className="inline-block bg-forest text-cream px-8 py-3 rounded-full text-sm uppercase tracking-widest hover:bg-gold hover:text-forest transition-colors duration-300"
+        >
+          Shop Now
         </Link>
       </div>
     );
