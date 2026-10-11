@@ -178,7 +178,7 @@ export default function ProductCard({ product, discountPercent = 0, priority = f
 
       <div className="p-4">
         <Link href={`/product/${product.slug}`}>
-          <h3 className="font-serif text-lg text-forest truncate">{product.name}</h3>
+          <h3 className="font-serif text-lg leading-snug text-forest line-clamp-2 min-h-[2.75rem]">{product.name}</h3>
         </Link>
         <p className="text-xs text-charcoal/50 mt-1">{product.metal}</p>
         {count > 0 && (
