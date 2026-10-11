@@ -40,4 +40,14 @@ router.patch("/:id/status", async (req, res) => {
   }
 });
 
+router.delete("/:id", async (req, res) => {
+  try {
+    await pool.query("DELETE FROM returns WHERE id = ?", [req.params.id]);
+    res.json({ ok: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to delete return" });
+  }
+});
+
 module.exports = router;

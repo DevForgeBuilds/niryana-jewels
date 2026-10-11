@@ -1,6 +1,10 @@
 "use client";
 
+import { useState } from "react";
 import { useAdminStore } from "@/store/adminStore";
+import { toast } from "@/store/toastStore";
+import ConfirmDialog from "@/components/admin/ConfirmDialog";
+import { DeleteAction } from "@/components/admin/ActionButtons";
 
 const STATUSES = ["requested", "approved", "rejected", "refunded"];
 
@@ -12,7 +16,8 @@ const statusColor = {
 };
 
 export default function ReturnsPage() {
-  const { returns, updateReturnStatus } = useAdminStore();
+  const { returns, updateReturnStatus, deleteReturn } = useAdminStore();
+  const [confirmTarget, setConfirmTarget] = useState(null);
 
   return (
     <div>
@@ -29,6 +34,7 @@ export default function ReturnsPage() {
               <th className="py-3 px-4">Amount</th>
               <th className="py-3 px-4">Status</th>
               <th className="py-3 px-4">Date</th>
+              <th className="py-3 px-4">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -51,11 +57,14 @@ export default function ReturnsPage() {
                   </select>
                 </td>
                 <td className="py-3 px-4 text-charcoal/50">{r.createdAt}</td>
+                <td className="py-3 px-4">
+                  <DeleteAction onClick={() => setConfirmTarget(r)} />
+                </td>
               </tr>
             ))}
             {returns.length === 0 && (
               <tr>
-                <td colSpan={7} className="py-8 text-center text-charcoal/40">No return requests.</td>
+                <td colSpan={8} className="py-8 text-center text-charcoal/40">No return requests.</td>
               </tr>
             )}
           </tbody>
@@ -64,6 +73,19 @@ export default function ReturnsPage() {
       <p className="text-xs text-charcoal/40 mt-4">
         Live data from MySQL — updates automatically as customers submit return requests.
       </p>
+
+      <ConfirmDialog
+        open={!!confirmTarget}
+        title="Delete this return request?"
+        message={confirmTarget ? `The return request for order ${confirmTarget.orderNumber} (${confirmTarget.customerName}) will be permanently removed.` : ""}
+        confirmLabel="Delete"
+        onConfirm={() => {
+          deleteReturn(confirmTarget.id);
+          toast("Return request deleted.", "info");
+          setConfirmTarget(null);
+        }}
+        onCancel={() => setConfirmTarget(null)}
+      />
     </div>
   );
 }

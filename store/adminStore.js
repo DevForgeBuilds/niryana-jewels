@@ -248,6 +248,11 @@ export const useAdminStore = create((set, get) => ({
     get().refreshActivity();
   },
 
+  deleteReturn: async (id) => {
+    await api.deleteReturn(id);
+    set((state) => ({ returns: state.returns.filter((r) => r.id !== id) }));
+  },
+
   // ---------------- Staff ----------------
   addStaff: async (staff) => {
     const created = await api.addStaff(staff);
