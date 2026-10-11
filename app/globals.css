@@ -69,6 +69,16 @@ h1, h2, h3, h4, .font-serif {
   }
 }
 
+/* Hides the scrollbar on horizontally-scrollable rows (e.g. Watch & Shop)
+   while keeping the content natively scrollable/swipeable. */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
 
 /* thin gold scrollbar */
 * {
