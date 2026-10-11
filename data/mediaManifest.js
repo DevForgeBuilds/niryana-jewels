@@ -32,6 +32,13 @@ const LOCAL_CONVERTED = {
   braceletEmeraldSatin: "/media/bracelet-emerald-satin.jpg",
   ringRosePetals: "/media/ring-rose-petals.jpg",
   pendantGreenSatin: "/media/pendant-green-satin.jpg",
+  // Mahadev Protection Pendant and Hare Krishna Silver Pendant previously had no
+  // still photo of their own and were (wrongly) showing the Shree Ram Pendant photo
+  // instead. These are real frame-grabs from the client's OWN product reels for each
+  // item (mahadevProtectionReel / hareKrishnaSilverReel below), cropped to remove the
+  // reel's caption text — genuine product photography, not stock/AI imagery.
+  mahadevProtectionPendant: "/media/mahadev-protection-pendant.jpg",
+  hareKrishnaPendant: "/media/hare-krishna-silver-pendant.jpg",
 };
 
 export const LOGO_URL = "/logo/niryana-logo.png"; // extracted from repo's "Logo pdf Final.pdf"

@@ -106,7 +106,7 @@ export const PRODUCTS = [
     stone: "—",
     certification: "BIS 925 Hallmark",
     description: "Strength. Faith. Protection. A timeless symbol of devotion crafted in sterling silver.",
-    images: [ASSETS.shreeRamPendant],
+    images: [ASSETS.mahadevProtectionPendant],
     video: ASSETS.mahadevProtectionReel,
   },
   {
@@ -196,7 +196,7 @@ export const PRODUCTS = [
     stone: "—",
     certification: "BIS 925 Hallmark",
     description: "Gift them something they'll never want to remove.",
-    images: [ASSETS.shreeRamPendant],
+    images: [ASSETS.hareKrishnaPendant],
     video: ASSETS.hareKrishnaSilverReel,
   },
 ];
