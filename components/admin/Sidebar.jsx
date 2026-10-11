@@ -75,11 +75,11 @@ export default function Sidebar({ mobileOpen = false, onClose = () => {} }) {
 
   return (
     <aside
-      className={`no-scrollbar w-64 bg-forest text-cream flex flex-col fixed inset-y-0 left-0 overflow-y-auto print:hidden z-50 transition-transform duration-300 ease-in-out md:translate-x-0 ${
+      className={`w-64 bg-forest text-cream flex flex-col fixed inset-y-0 left-0 print:hidden z-50 transition-transform duration-300 ease-in-out md:translate-x-0 ${
         mobileOpen ? "translate-x-0" : "-translate-x-full"
       }`}
     >
-      <div className="p-6 border-b border-cream/10 flex items-start justify-between">
+      <div className="p-6 border-b border-cream/10 flex items-start justify-between shrink-0">
         <div className="flex-1 flex flex-col items-center text-center">
           <Image
             src={LOGO_URL_LIGHT}
@@ -101,7 +101,7 @@ export default function Sidebar({ mobileOpen = false, onClose = () => {} }) {
         </button>
       </div>
 
-      <nav className="flex-1 p-4 space-y-1">
+      <nav className="no-scrollbar flex-1 min-h-0 overflow-y-auto p-4 space-y-1">
         {NAV.map((item) => {
           const active = item.href === "/admin" ? pathname === "/admin" : pathname?.startsWith(item.href);
           return (
@@ -120,7 +120,7 @@ export default function Sidebar({ mobileOpen = false, onClose = () => {} }) {
         })}
       </nav>
 
-      <div className="p-4 border-t border-cream/10 space-y-2">
+      <div className="p-4 border-t border-cream/10 space-y-2 shrink-0">
         <Link href="/" className="block text-xs text-cream/60 hover:text-gold px-4">
           ← Back to Storefront
         </Link>
