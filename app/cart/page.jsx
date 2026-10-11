@@ -127,7 +127,7 @@ export default function CartPage() {
           </div>
           <Link
             href="/checkout"
-            className="block text-center bg-forest text-cream py-3 rounded-full text-sm uppercase tracking-widest hover:bg-gold hover:text-forest transition-colors duration-300"
+            className="btn-shimmer block text-center bg-forest text-cream py-3 rounded-full text-sm uppercase tracking-widest hover:bg-gold hover:text-forest transition-colors duration-300"
           >
             Proceed to Checkout
           </Link>

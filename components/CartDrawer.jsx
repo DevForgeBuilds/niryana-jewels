@@ -93,7 +93,7 @@ export default function CartDrawer() {
                       className="flex gap-3 bg-white rounded-xl p-3 shadow-sm"
                     >
                       <div className="relative w-16 h-16 rounded-lg overflow-hidden flex-shrink-0">
-                        <Image src={item.image} alt={item.name} fill sizes="64px" className="object-cover" />
+                        <Image src={item.image} alt={item.name} fill sizes="64px" className="product-photo-tone object-cover" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm text-forest truncate">{item.name}</p>

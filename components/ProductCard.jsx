@@ -47,7 +47,7 @@ export default function ProductCard({ product, discountPercent = 0, priority = f
   }
 
   return (
-    <div className="relative group bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-shadow duration-500">
+    <div className="relative group bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1 transition-[box-shadow,transform] duration-500 ease-apple">
       <Link href={`/product/${product.slug}`} className="block relative aspect-[4/5] overflow-hidden">
         <Image
           src={product.images[0]}
@@ -56,7 +56,7 @@ export default function ProductCard({ product, discountPercent = 0, priority = f
           sizes="(max-width: 768px) 50vw, 25vw"
           priority={priority}
           loading={priority ? undefined : "lazy"}
-          className="object-cover transition-transform duration-700 ease-apple group-hover:scale-105"
+          className="product-photo-tone object-cover transition-transform duration-700 ease-apple group-hover:scale-105"
         />
         {product.images[1] && (
           <Image
@@ -64,7 +64,7 @@ export default function ProductCard({ product, discountPercent = 0, priority = f
             alt={product.name}
             fill
             sizes="(max-width: 768px) 50vw, 25vw"
-            className="object-cover absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+            className="product-photo-tone object-cover absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
           />
         )}
       </Link>
@@ -201,7 +201,7 @@ export default function ProductCard({ product, discountPercent = 0, priority = f
               whileTap={{ scale: 0.9 }}
               animate={added ? { scale: [1, 1.08, 1] } : { scale: 1 }}
               transition={{ duration: 0.35 }}
-              className={`relative overflow-hidden text-xs uppercase tracking-widest px-4 py-2 rounded-full transition-colors duration-300 ${
+              className={`btn-shimmer relative overflow-hidden text-xs uppercase tracking-widest px-4 py-2 rounded-full transition-colors duration-300 ${
                 added ? "bg-gold text-forest" : "bg-forest text-cream hover:bg-gold hover:text-forest"
               }`}
             >

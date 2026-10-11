@@ -130,7 +130,7 @@ export default function QuickViewModal({ product, onClose }) {
               alt={product.name}
               fill
               sizes="(max-width: 768px) 100vw, 50vw"
-              className="object-cover"
+              className="product-photo-tone object-cover"
             />
             {product.images.length > 1 && (
               <div className="absolute bottom-3 left-0 right-0 flex items-center justify-center gap-1.5">

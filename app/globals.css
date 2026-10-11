@@ -32,6 +32,44 @@ h1, h2, h3, h4, .font-serif {
   transform: translateY(0);
 }
 
+/* Shared, subtle warm colour-grade applied to every product photo. The catalogue
+   mixes a few different photoshoots/backdrops (studio flat-lays, on-hand reel
+   grabs, lifestyle shots) — this ties them into one consistent, premium mood
+   instead of changing/replacing any of the real photography. */
+.product-photo-tone {
+  filter: saturate(1.07) contrast(1.035) brightness(1.015) sepia(0.035);
+}
+
+/* Gold shimmer sweep for primary call-to-action buttons. Subtle and only on
+   hover/focus — restrained, not a constant distracting animation. */
+.btn-shimmer {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+.btn-shimmer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  left: -80%;
+  width: 45%;
+  background: linear-gradient(115deg, transparent, rgba(255, 255, 255, 0.45), transparent);
+  transform: skewX(-18deg);
+  transition: left 0.85s cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: none;
+}
+.btn-shimmer:hover::after,
+.btn-shimmer:focus-visible::after {
+  left: 130%;
+}
+@media (prefers-reduced-motion: reduce) {
+  .btn-shimmer::after {
+    transition: none;
+    display: none;
+  }
+}
+
+
 /* thin gold scrollbar */
 * {
   scrollbar-width: thin;

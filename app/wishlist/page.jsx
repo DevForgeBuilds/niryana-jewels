@@ -69,7 +69,7 @@ export default function WishlistPage() {
         {items.map((item) => (
           <div key={item.productId} className="flex gap-4 bg-white rounded-xl p-4 shadow-sm">
             <Link href={`/product/${item.slug}`} className="relative w-24 h-24 rounded-lg overflow-hidden flex-shrink-0">
-              <Image src={item.image} alt={item.name} fill sizes="96px" className="object-cover" />
+              <Image src={item.image} alt={item.name} fill sizes="96px" className="product-photo-tone object-cover" />
             </Link>
             <div className="flex-1 flex flex-col">
               <Link href={`/product/${item.slug}`}>

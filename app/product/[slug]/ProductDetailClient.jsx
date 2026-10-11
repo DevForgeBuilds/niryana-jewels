@@ -188,7 +188,7 @@ export default function ProductDetailClient() {
                     alt={product.name}
                     fill
                     sizes="(max-width: 768px) 100vw, 50vw"
-                    className="object-cover cursor-zoom-in pointer-events-auto"
+                    className="product-photo-tone object-cover cursor-zoom-in pointer-events-auto"
                     priority
                     draggable={false}
                     onClick={() => setLightboxOpen(true)}
@@ -271,7 +271,7 @@ export default function ProductDetailClient() {
                         </span>
                       </>
                     ) : (
-                      <Image src={m.src} alt="" fill sizes="64px" className="object-cover" />
+                      <Image src={m.src} alt="" fill sizes="64px" className="product-photo-tone object-cover" />
                     )}
                   </button>
                 ))}
@@ -449,7 +449,7 @@ export default function ProductDetailClient() {
                   whileTap={{ scale: 0.96 }}
                   animate={added ? { scale: [1, 1.04, 1] } : { scale: 1 }}
                   transition={{ duration: 0.35 }}
-                  className={`relative overflow-hidden flex-1 py-3 rounded-full text-sm uppercase tracking-widest transition-colors duration-300 ${
+                  className={`btn-shimmer relative overflow-hidden flex-1 py-3 rounded-full text-sm uppercase tracking-widest transition-colors duration-300 ${
                     added ? "bg-gold text-forest" : "bg-forest text-cream hover:bg-gold hover:text-forest"
                   }`}
                 >

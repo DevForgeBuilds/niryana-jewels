@@ -22,7 +22,7 @@ export default function FeaturedCollections() {
             <Reveal key={key} delay={idx * 0.08}>
               <Link
                 href={`/shop?category=${key}`}
-                className="group block rounded-2xl overflow-hidden bg-white shadow-sm hover:shadow-xl transition-shadow duration-500"
+                className="group block rounded-2xl overflow-hidden bg-white shadow-sm hover:shadow-xl hover:-translate-y-1 transition-[box-shadow,transform] duration-500 ease-apple"
               >
                 <div className="relative aspect-[4/5] overflow-hidden">
                   <Image
@@ -30,7 +30,7 @@ export default function FeaturedCollections() {
                     alt={`${c.name} collection — handcrafted jewellery by Niryana Jewels`}
                     fill
                     sizes="(max-width: 768px) 100vw, 33vw"
-                    className="object-cover transition-transform duration-700 ease-apple group-hover:scale-105"
+                    className="product-photo-tone object-cover transition-transform duration-700 ease-apple group-hover:scale-105"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-forest/50 via-transparent to-transparent" />
                   <div className="absolute bottom-0 left-0 right-0 p-6">

@@ -55,13 +55,13 @@ export default function Hero() {
         >
           <Link
             href="/shop"
-            className="bg-gold text-forest px-8 py-3 rounded-full text-sm tracking-widest uppercase hover:bg-gold-light transition-colors duration-300"
+            className="btn-shimmer bg-gold text-forest px-8 py-3 rounded-full text-sm tracking-widest uppercase hover:bg-gold-light transition-colors duration-300"
           >
             Shop Collection
           </Link>
           <Link
             href="/about"
-            className="border border-cream/70 text-cream px-8 py-3 rounded-full text-sm tracking-widest uppercase hover:bg-cream/10 transition-colors duration-300"
+            className="btn-shimmer border border-cream/70 text-cream px-8 py-3 rounded-full text-sm tracking-widest uppercase hover:bg-cream/10 transition-colors duration-300"
           >
             Our Story
           </Link>
