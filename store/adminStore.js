@@ -26,6 +26,8 @@ export const useAdminStore = create((set, get) => ({
     codEnabled: true,
     lowStockThreshold: 5,
     alertEmail: "",
+    ga4MeasurementId: "",
+    metaPixelId: "",
   },
   festiveCollections: [],
   activityLog: [],

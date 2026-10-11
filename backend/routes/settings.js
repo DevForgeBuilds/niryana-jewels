@@ -12,6 +12,8 @@ function mapRow(row) {
     codEnabled: Boolean(row.cod_enabled),
     lowStockThreshold: Number(row.low_stock_threshold ?? 5),
     alertEmail: row.alert_email || "",
+    ga4MeasurementId: row.ga4_measurement_id || "",
+    metaPixelId: row.meta_pixel_id || "",
   };
 }
 
@@ -42,11 +44,14 @@ router.put("/", async (req, res) => {
       codEnabled: "cod_enabled",
       lowStockThreshold: "low_stock_threshold",
       alertEmail: "alert_email",
+      ga4MeasurementId: "ga4_measurement_id",
+      metaPixelId: "meta_pixel_id",
     };
+    const nullIfEmpty = new Set(["alertEmail", "ga4MeasurementId", "metaPixelId"]);
     for (const [key, col] of Object.entries(map)) {
       if (b[key] !== undefined) {
         fields.push(`${col} = ?`);
-        values.push(key === "alertEmail" && b[key] === "" ? null : b[key]);
+        values.push(nullIfEmpty.has(key) && b[key] === "" ? null : b[key]);
       }
     }
     if (!fields.length) return res.status(400).json({ error: "No fields to update" });

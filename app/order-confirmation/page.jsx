@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
@@ -8,6 +9,47 @@ import Reveal from "@/components/Reveal";
 
 export default function OrderConfirmationPage() {
   const order = useLastOrderStore((s) => s.order);
+
+  // Fire GA4 "purchase" and Meta Pixel "Purchase" conversion events once per
+  // order. Guarded with a sessionStorage flag so a page refresh doesn't
+  // double-count the same order, and each call checks the tracker actually
+  // loaded (it only loads once a real GA4/Pixel ID is saved in Admin →
+  // Settings, so this is a no-op until then).
+  useEffect(() => {
+    if (!order?.orderNumber) return;
+    const flagKey = `tracked-purchase-${order.orderNumber}`;
+    if (typeof window === "undefined" || sessionStorage.getItem(flagKey)) return;
+
+    const items = (order.items || []).map((i) => ({
+      item_id: String(i.productId),
+      item_name: i.name,
+      price: i.price,
+      quantity: i.quantity,
+    }));
+
+    if (typeof window.gtag === "function") {
+      window.gtag("event", "purchase", {
+        transaction_id: order.orderNumber,
+        value: order.total,
+        currency: "INR",
+        shipping: order.codFee || 0,
+        tax: order.gst || 0,
+        items,
+      });
+    }
+
+    if (typeof window.fbq === "function") {
+      window.fbq("track", "Purchase", {
+        value: order.total,
+        currency: "INR",
+        content_ids: items.map((i) => i.item_id),
+        contents: items.map((i) => ({ id: i.item_id, quantity: i.quantity })),
+        content_type: "product",
+      });
+    }
+
+    sessionStorage.setItem(flagKey, "1");
+  }, [order]);
 
   if (!order) {
     return (

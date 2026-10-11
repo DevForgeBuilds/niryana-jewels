@@ -144,6 +144,13 @@ async function ensureSchema() {
     await addColumnIfMissing("settings", "alert_email VARCHAR(190) DEFAULT NULL");
     await addColumnIfMissing("settings", "low_stock_alert_sent_date DATE DEFAULT NULL");
 
+    // --- Analytics / ads tracking IDs (GA4 + Meta Pixel). Left NULL until the
+    // owner pastes real IDs into Admin → Settings; the storefront only injects
+    // the corresponding script when its ID is non-empty, so this is safe to
+    // ship ahead of having real IDs. ---
+    await addColumnIfMissing("settings", "ga4_measurement_id VARCHAR(32) DEFAULT NULL");
+    await addColumnIfMissing("settings", "meta_pixel_id VARCHAR(32) DEFAULT NULL");
+
     console.log(
       "Schema check OK (abandoned_checkouts, stock_notifications, newsletter_subscribers, product_variants, festive sale fields, low-stock alert fields ready)."
     );

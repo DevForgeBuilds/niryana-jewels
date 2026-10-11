@@ -40,6 +40,19 @@ export default function SettingsPage() {
     }
   }
 
+  async function handleAnalyticsSave(e) {
+    e.preventDefault();
+    try {
+      await updateSettings({
+        ga4MeasurementId: (shipForm.ga4MeasurementId || "").trim(),
+        metaPixelId: (shipForm.metaPixelId || "").trim(),
+      });
+      toast("Analytics & ads tracking settings saved.", "success");
+    } catch (err) {
+      toast(`Failed to save settings: ${err.message}`, "error");
+    }
+  }
+
   function handlePasswordChange(e) {
     e.preventDefault();
     // The admin login credentials (email + password) now live server-side only, in
@@ -170,6 +183,43 @@ export default function SettingsPage() {
             className="sm:col-span-2 bg-forest text-cream py-2.5 rounded-full text-sm uppercase tracking-widest hover:bg-gold hover:text-forest transition-colors"
           >
             Save Low-Stock Alert Settings
+          </button>
+        </form>
+      </section>
+
+      <section className="bg-white rounded-xl shadow-sm p-6">
+        <h2 className="font-serif text-xl text-forest mb-1">Analytics &amp; Ads Tracking</h2>
+        <p className="text-xs text-charcoal/40 mb-4">
+          Paste your Google Analytics 4 Measurement ID and/or Meta (Facebook) Pixel ID below to start
+          tracking site traffic, conversions and enable retargeting ads. Leave either field blank to
+          keep that tracker switched off — nothing loads on the storefront until an ID is saved here.
+        </p>
+        <form onSubmit={handleAnalyticsSave} className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-lg">
+          <div>
+            <label className="text-xs uppercase tracking-widest text-charcoal/50">GA4 Measurement ID</label>
+            <input
+              type="text"
+              value={shipForm.ga4MeasurementId || ""}
+              onChange={(e) => setShipForm({ ...shipForm, ga4MeasurementId: e.target.value })}
+              placeholder="G-XXXXXXXXXX"
+              className="w-full border border-forest/20 rounded-lg px-4 py-2.5 mt-1 font-mono text-sm"
+            />
+          </div>
+          <div>
+            <label className="text-xs uppercase tracking-widest text-charcoal/50">Meta Pixel ID</label>
+            <input
+              type="text"
+              value={shipForm.metaPixelId || ""}
+              onChange={(e) => setShipForm({ ...shipForm, metaPixelId: e.target.value })}
+              placeholder="1234567890123456"
+              className="w-full border border-forest/20 rounded-lg px-4 py-2.5 mt-1 font-mono text-sm"
+            />
+          </div>
+          <button
+            type="submit"
+            className="sm:col-span-2 bg-forest text-cream py-2.5 rounded-full text-sm uppercase tracking-widest hover:bg-gold hover:text-forest transition-colors"
+          >
+            Save Analytics &amp; Ads Tracking
           </button>
         </form>
       </section>
