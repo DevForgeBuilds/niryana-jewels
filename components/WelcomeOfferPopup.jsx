@@ -4,19 +4,25 @@ import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { useAdminStore } from "@/store/adminStore";
+import { api } from "@/lib/api";
 
-const STORAGE_KEY = "niryana-welcome-offer-seen";
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-// Shown once per visitor (localStorage-gated) a few seconds after they land,
-// to capture first-time buyers who might otherwise bounce without ordering.
-// Fully admin-configurable from Admin -> Settings -> Welcome Offer Popup
-// (enable/disable, delay, which coupon to advertise). It always mirrors a
-// real, active coupon from the Coupons list — no separate discount value is
-// stored here, so it can never promise a discount that doesn't actually work
-// at checkout.
+// Shown a few seconds after landing, on EVERY visit (not just the first ever
+// time) — the visitor has to enter their email to unlock the code, which
+// grows the newsletter list and captures first-time buyers who might
+// otherwise bounce without ordering. Fully admin-configurable from
+// Admin -> Settings -> Welcome Offer Popup (enable/disable, delay, which
+// coupon to advertise). It always mirrors a real, active coupon from the
+// Coupons list — no separate discount value is stored here, so it can never
+// promise a discount that doesn't actually work at checkout.
 export default function WelcomeOfferPopup() {
   const pathname = usePathname();
   const [visible, setVisible] = useState(false);
+  const [email, setEmail] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [unlocked, setUnlocked] = useState(false);
+  const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
   const coupons = useAdminStore((s) => s.coupons);
   const settings = useAdminStore((s) => s.settings);
@@ -28,15 +34,37 @@ export default function WelcomeOfferPopup() {
 
   useEffect(() => {
     if (typeof window === "undefined" || isAdminRoute || !enabled) return;
-    if (localStorage.getItem(STORAGE_KEY)) return;
 
+    // No "seen before" gate — this is intentionally shown again every time
+    // someone lands on the site (fresh page load / new tab), not just once
+    // ever per visitor.
     const timer = setTimeout(() => setVisible(true), delayMs);
     return () => clearTimeout(timer);
   }, [isAdminRoute, enabled, delayMs]);
 
   function dismiss() {
     setVisible(false);
-    localStorage.setItem(STORAGE_KEY, "1");
+  }
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    const trimmed = email.trim();
+    if (!EMAIL_RE.test(trimmed)) {
+      setError("Please enter a valid email address.");
+      return;
+    }
+    setError("");
+    setSubmitting(true);
+    try {
+      await api.subscribeNewsletter(trimmed);
+    } catch (err) {
+      // Even if the save fails server-side, don't block the visitor from
+      // getting their code — just log it. Worst case: one missed subscriber.
+      console.error("Failed to save welcome-offer email:", err.message);
+    } finally {
+      setSubmitting(false);
+      setUnlocked(true);
+    }
   }
 
   function handleCopy() {
@@ -79,14 +107,43 @@ export default function WelcomeOfferPopup() {
             </button>
             <p className="text-gold uppercase tracking-widest text-xs mb-2">Welcome to Niryana Jewels</p>
             <h3 className="font-serif text-2xl text-forest mb-2">Get {coupon.value}% Off</h3>
-            <p className="text-charcoal/60 text-sm mb-4">On your first order — use this code at checkout.</p>
-            <button
-              onClick={handleCopy}
-              className="w-full border-2 border-dashed border-gold rounded-xl py-3 text-forest font-serif text-lg tracking-widest hover:bg-gold/10 transition-colors"
-            >
-              {copied ? "Copied!" : couponCode}
-            </button>
-            <p className="text-[11px] text-charcoal/40 mt-3">Tap the code to copy it</p>
+
+            {!unlocked ? (
+              <>
+                <p className="text-charcoal/60 text-sm mb-4">
+                  On your first order — enter your email to unlock the code.
+                </p>
+                <form onSubmit={handleSubmit} className="space-y-2">
+                  <input
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="you@example.com"
+                    className="w-full border border-forest/20 rounded-xl px-4 py-3 text-sm text-center focus:outline-none focus:border-gold"
+                  />
+                  {error && <p className="text-red-500 text-xs">{error}</p>}
+                  <button
+                    type="submit"
+                    disabled={submitting}
+                    className="w-full bg-forest text-cream rounded-xl py-3 text-sm uppercase tracking-widest hover:bg-gold hover:text-forest transition-colors disabled:opacity-60"
+                  >
+                    {submitting ? "Please wait…" : "Unlock My Code"}
+                  </button>
+                </form>
+              </>
+            ) : (
+              <>
+                <p className="text-charcoal/60 text-sm mb-4">Use this code at checkout.</p>
+                <button
+                  onClick={handleCopy}
+                  className="w-full border-2 border-dashed border-gold rounded-xl py-3 text-forest font-serif text-lg tracking-widest hover:bg-gold/10 transition-colors"
+                >
+                  {copied ? "Copied!" : couponCode}
+                </button>
+                <p className="text-[11px] text-charcoal/40 mt-3">Tap the code to copy it</p>
+              </>
+            )}
           </motion.div>
         </>
       )}
