@@ -15,7 +15,7 @@ const TEMPLATE_PATH = path.join(__dirname, "../assets/niryana-letterhead.pdf");
 
 const MARGIN_LEFT = 56;
 const MARGIN_RIGHT = 539;
-const CONTENT_TOP = 668;
+const CONTENT_TOP = 642; // comfortably below the pre-printed GSTIN/Udyam rule on the letterhead
 const CONTENT_BOTTOM = 92;
 
 function money(n) {
@@ -144,7 +144,8 @@ async function generateInvoicePdfBuffer(order) {
   }
   row("GST", money(order.gst));
   if (order.codFee > 0) row("COD Fee", money(order.codFee));
-  hr(y + 6);
+  hr(y);
+  y -= 20;
   row("TOTAL", money(order.total), { font: serifBold, size: 12.5, color: forest, gap: 18 });
 
   draw(
